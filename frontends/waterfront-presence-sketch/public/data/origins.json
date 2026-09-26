@@ -1,0 +1,309 @@
+{
+  "sources": [
+    {
+      "id": "vancouver-local-areas",
+      "title": "City of Vancouver Open Data, local-area-boundary",
+      "url": "https://opendata.vancouver.ca/explore/dataset/local-area-boundary/information/"
+    },
+    {
+      "id": "statcan-2021-pr",
+      "title": "Statistics Canada 2021 province and territory digital boundary file lpr_000b21a_e",
+      "url": "https://www12.statcan.gc.ca/census-recensement/2021/geo/sip-pis/boundary-limites/index2021-eng.cfm"
+    },
+    {
+      "id": "statcan-2021-csd",
+      "title": "Statistics Canada 2021 census subdivision digital boundary file lcsd000b21a_e",
+      "url": "https://www12.statcan.gc.ca/census-recensement/2021/geo/sip-pis/boundary-limites/index2021-eng.cfm"
+    }
+  ],
+  "origins": [
+    {
+      "name": "Alberta",
+      "map": "canada",
+      "longitude": -114.38676,
+      "latitude": 54.93595,
+      "source": "statcan-2021-pr",
+      "crosswalk": "Province of Alberta."
+    },
+    {
+      "name": "Arbutus Ridge",
+      "map": "metro",
+      "longitude": -123.16167,
+      "latitude": 49.2468,
+      "source": "vancouver-local-areas",
+      "crosswalk": "Centroid of the City of Vancouver local-area polygon with this name."
+    },
+    {
+      "name": "Atlantic Canada",
+      "map": "canada",
+      "longitude": -61.50751,
+      "latitude": 50.98714,
+      "source": "statcan-2021-pr",
+      "crosswalk": "Area-weighted centroid of New Brunswick, Nova Scotia, Prince Edward Island, and Newfoundland and Labrador. The point falls in the ocean between those provinces."
+    },
+    {
+      "name": "British Columbia Other",
+      "map": "canada",
+      "longitude": -124.31086,
+      "latitude": 54.51655,
+      "source": "statcan-2021-csd",
+      "crosswalk": "Area-weighted centroid of British Columbia census subdivisions other than Vancouver, the mapped municipalities, and Metro Vancouver A. The excluded area is small, so the point sits near the provincial centroid."
+    },
+    {
+      "name": "Burnaby",
+      "map": "metro",
+      "longitude": -122.96508,
+      "latitude": 49.24607,
+      "source": "statcan-2021-csd",
+      "crosswalk": "Burnaby, city, CSDUID 5915025. Area-weighted centroid of the 2021 census subdivision, Lambert projection then transformed to WGS84."
+    },
+    {
+      "name": "Delta",
+      "map": "metro",
+      "longitude": -123.01045,
+      "latitude": 49.09944,
+      "source": "statcan-2021-csd",
+      "crosswalk": "Delta, city, CSDUID 5915011. Area-weighted centroid of the 2021 census subdivision, Lambert projection then transformed to WGS84."
+    },
+    {
+      "name": "Downtown",
+      "map": "metro",
+      "longitude": -123.11657,
+      "latitude": 49.28075,
+      "source": "vancouver-local-areas",
+      "crosswalk": "Centroid of the City of Vancouver local-area polygon with this name."
+    },
+    {
+      "name": "Dunbar-Southlands",
+      "map": "metro",
+      "longitude": -123.18955,
+      "latitude": 49.23796,
+      "source": "vancouver-local-areas",
+      "crosswalk": "Centroid of the City of Vancouver local-area polygon with this name."
+    },
+    {
+      "name": "Fairview",
+      "map": "metro",
+      "longitude": -123.13105,
+      "latitude": 49.26454,
+      "source": "vancouver-local-areas",
+      "crosswalk": "Centroid of the City of Vancouver local-area polygon with this name."
+    },
+    {
+      "name": "Grandview-Woodland",
+      "map": "metro",
+      "longitude": -123.06673,
+      "latitude": 49.27644,
+      "source": "vancouver-local-areas",
+      "crosswalk": "Centroid of the City of Vancouver local-area polygon with this name."
+    },
+    {
+      "name": "Hastings-Sunrise",
+      "map": "metro",
+      "longitude": -123.04027,
+      "latitude": 49.27793,
+      "source": "vancouver-local-areas",
+      "crosswalk": "Centroid of the City of Vancouver local-area polygon with this name."
+    },
+    {
+      "name": "International",
+      "map": "none",
+      "longitude": null,
+      "latitude": null,
+      "source": null,
+      "crosswalk": "No Canadian boundary. Shown in the origin bars only."
+    },
+    {
+      "name": "Kensington-Cedar Cottage",
+      "map": "metro",
+      "longitude": -123.07288,
+      "latitude": 49.24669,
+      "source": "vancouver-local-areas",
+      "crosswalk": "Centroid of the City of Vancouver local-area polygon with this name."
+    },
+    {
+      "name": "Killarney",
+      "map": "metro",
+      "longitude": -123.03765,
+      "latitude": 49.21702,
+      "source": "vancouver-local-areas",
+      "crosswalk": "Centroid of the City of Vancouver local-area polygon with this name."
+    },
+    {
+      "name": "Kitsilano",
+      "map": "metro",
+      "longitude": -123.16329,
+      "latitude": 49.26754,
+      "source": "vancouver-local-areas",
+      "crosswalk": "Centroid of the City of Vancouver local-area polygon with this name."
+    },
+    {
+      "name": "Langley",
+      "map": "metro",
+      "longitude": -122.57478,
+      "latitude": 49.094,
+      "source": "statcan-2021-csd",
+      "crosswalk": "Area-weighted centroid of the union of Langley city (5915002) and Langley district municipality (5915001). Langley 2 reserve is not included."
+    },
+    {
+      "name": "Manitoba",
+      "map": "canada",
+      "longitude": -97.50318,
+      "latitude": 54.68994,
+      "source": "statcan-2021-pr",
+      "crosswalk": "Province of Manitoba."
+    },
+    {
+      "name": "Maple Ridge",
+      "map": "metro",
+      "longitude": -122.5162,
+      "latitude": 49.26183,
+      "source": "statcan-2021-csd",
+      "crosswalk": "Maple Ridge, city, CSDUID 5915075. Area-weighted centroid of the 2021 census subdivision, Lambert projection then transformed to WGS84."
+    },
+    {
+      "name": "Marpole",
+      "map": "metro",
+      "longitude": -123.12838,
+      "latitude": 49.21021,
+      "source": "vancouver-local-areas",
+      "crosswalk": "Centroid of the City of Vancouver local-area polygon with this name."
+    },
+    {
+      "name": "Mount Pleasant",
+      "map": "metro",
+      "longitude": -123.09851,
+      "latitude": 49.26307,
+      "source": "vancouver-local-areas",
+      "crosswalk": "Centroid of the City of Vancouver local-area polygon with this name."
+    },
+    {
+      "name": "New Westminster",
+      "map": "metro",
+      "longitude": -122.91866,
+      "latitude": 49.20849,
+      "source": "statcan-2021-csd",
+      "crosswalk": "New Westminster, city, CSDUID 5915029. Area-weighted centroid of the 2021 census subdivision, Lambert projection then transformed to WGS84."
+    },
+    {
+      "name": "North Vancouver",
+      "map": "metro",
+      "longitude": -123.01093,
+      "latitude": 49.36113,
+      "source": "statcan-2021-csd",
+      "crosswalk": "Area-weighted centroid of the union of North Vancouver city (5915051) and North Vancouver district municipality (5915046)."
+    },
+    {
+      "name": "Oakridge",
+      "map": "metro",
+      "longitude": -123.12302,
+      "latitude": 49.2264,
+      "source": "vancouver-local-areas",
+      "crosswalk": "Centroid of the City of Vancouver local-area polygon with this name."
+    },
+    {
+      "name": "Ontario",
+      "map": "canada",
+      "longitude": -85.57827,
+      "latitude": 50.26351,
+      "source": "statcan-2021-pr",
+      "crosswalk": "Province of Ontario."
+    },
+    {
+      "name": "Pitt Meadows",
+      "map": "metro",
+      "longitude": -122.66379,
+      "latitude": 49.27195,
+      "source": "statcan-2021-csd",
+      "crosswalk": "Pitt Meadows, city, CSDUID 5915070. Area-weighted centroid of the 2021 census subdivision, Lambert projection then transformed to WGS84."
+    },
+    {
+      "name": "Port Moody",
+      "map": "metro",
+      "longitude": -122.87,
+      "latitude": 49.29794,
+      "source": "statcan-2021-csd",
+      "crosswalk": "Port Moody, city, CSDUID 5915043. Area-weighted centroid of the 2021 census subdivision, Lambert projection then transformed to WGS84."
+    },
+    {
+      "name": "Renfrew-Collingwood",
+      "map": "metro",
+      "longitude": -123.04017,
+      "latitude": 49.24734,
+      "source": "vancouver-local-areas",
+      "crosswalk": "Centroid of the City of Vancouver local-area polygon with this name."
+    },
+    {
+      "name": "Richmond",
+      "map": "metro",
+      "longitude": -123.10655,
+      "latitude": 49.16455,
+      "source": "statcan-2021-csd",
+      "crosswalk": "Richmond, city, CSDUID 5915015. Area-weighted centroid of the 2021 census subdivision, Lambert projection then transformed to WGS84."
+    },
+    {
+      "name": "Saskatchewan and Territories",
+      "map": "canada",
+      "longitude": -106.7682,
+      "latitude": 66.47991,
+      "source": "statcan-2021-pr",
+      "crosswalk": "Area-weighted centroid of Saskatchewan, Yukon, the Northwest Territories, and Nunavut. The territories pull the point north."
+    },
+    {
+      "name": "Strathcona",
+      "map": "metro",
+      "longitude": -123.08824,
+      "latitude": 49.27822,
+      "source": "vancouver-local-areas",
+      "crosswalk": "Centroid of the City of Vancouver local-area polygon with this name."
+    },
+    {
+      "name": "Sunset",
+      "map": "metro",
+      "longitude": -123.09204,
+      "latitude": 49.21876,
+      "source": "vancouver-local-areas",
+      "crosswalk": "Centroid of the City of Vancouver local-area polygon with this name."
+    },
+    {
+      "name": "Surrey",
+      "map": "metro",
+      "longitude": -122.78429,
+      "latitude": 49.11671,
+      "source": "statcan-2021-csd",
+      "crosswalk": "Surrey, city, CSDUID 5915004. Area-weighted centroid of the 2021 census subdivision, Lambert projection then transformed to WGS84."
+    },
+    {
+      "name": "UBC",
+      "map": "metro",
+      "longitude": -123.23026,
+      "latitude": 49.25777,
+      "source": "statcan-2021-csd",
+      "crosswalk": "Census subdivision Metro Vancouver A (5915020) is mostly a northern piece. This dot is the centroid of the campus piece, the second-largest part, at the west side of the city. It is not the centroid of the whole subdivision."
+    },
+    {
+      "name": "Victoria-Fraserview",
+      "map": "metro",
+      "longitude": -123.06413,
+      "latitude": 49.22001,
+      "source": "vancouver-local-areas",
+      "crosswalk": "Centroid of the City of Vancouver local-area polygon with this name."
+    },
+    {
+      "name": "West End",
+      "map": "metro",
+      "longitude": -123.13544,
+      "latitude": 49.28501,
+      "source": "vancouver-local-areas",
+      "crosswalk": "Centroid of the City of Vancouver local-area polygon with this name."
+    },
+    {
+      "name": "West Vancouver",
+      "map": "metro",
+      "longitude": -123.19302,
+      "latitude": 49.36845,
+      "source": "statcan-2021-csd",
+      "crosswalk": "West Vancouver, district municipality, CSDUID 5915055. Area-weighted centroid of the 2021 census subdivision, Lambert projection then transformed to WGS84."
+    }
+  ]
+}
