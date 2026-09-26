@@ -18,7 +18,7 @@ Notebook output is not a substitute. Confirmed facts belong in both files, not o
 ## Working directory
 
 - Repo root is this directory, `ubc-rogers-databricks-hackathon-team-1`.
-- `notebooks/` holds exploratory Databricks notebooks (`.py` files with `# Databricks notebook source`). The same folder is the Git folder in the Databricks workspace.
+- `notebooks/` holds exploratory Databricks notebooks (`.py` files with `# Databricks notebook source`). The same folder is the Git folder in the Databricks workspace. Current notebooks: `01_timestamp_timezone.py`, `02_grain_and_identity.py`.
 - Do not put warehouse credentials, profiles, or `.env` files anywhere in the tree.
 
 ## Databricks
@@ -33,26 +33,27 @@ Notebook output is not a substitute. Confirmed facts belong in both files, not o
 
 - Fully qualify the table as `workspace.default.synthetic_data`. It is a managed Delta table on workspace `dbc-d1555967-1ea3`, queried with the Serverless Starter Warehouse.
 - Do not invent rows, coordinates, counts, or other statistics. If a number is not from a query or a cited open-source source, do not state it.
-- `longitude` and `latitude` are the place’s coordinates, repeated on every row for that `location_name`. Do not treat them as a movement path or per-device GPS track.
-- `origin` is the home region or province of the device or subscriber. It is not the previous stop.
-- `dwell_time` is minutes (`bigint`).
+- `longitude` and `latitude` are the place’s coordinates, repeated on every row for that `location_name`. Do not treat them as a movement path, a per-device GPS track, or the origin’s location.
+- `origin` is the home area of the visit, one of 36 labels (Vancouver neighbourhoods, Metro municipalities, provinces, `International`, and `UBC`). It is not the previous stop and not a person id.
+- `dwell_time` is minutes (`bigint`): how long that visit stays active after `timestamp`. It is not quantized to 30 minutes.
+- There is no device, subscriber, or visit identifier. A row is one visit interval. Do not link rows into people.
 - The data is synthetic. Do not attempt re-identification, and do not describe aggregates as real individuals.
 
 ## Location
 
-The focus location is **not chosen yet**. Allowed values: `UBC`, `Waterfront Station`, `Park Royal Mall`.
+The focus location is **Waterfront Station** (8,060,012 rows). Filter every query with `location_name = 'Waterfront Station'`.
 
-- Once the team picks one, record it here and filter every query with `location_name = '<chosen>'`.
-- Until then, do not mix the three places in one result unless each place is labeled.
+The same origin has a median of 8 rows in one 30-minute bin at this station, and up to 347. Those rows are separate visits.
 
 ## Time
 
-- `timestamp` is a UTC instant. Span: `2025-11-01 00:00:00Z` through `2026-08-31 23:59:55Z`.
+- `timestamp` is a 1-second UTC instant. Span: `2025-11-01 00:00:00Z` through `2026-08-31 23:59:55Z`. Whole seconds only; no subsecond component at Waterfront Station.
 - Bin and label hours in UTC. Do not convert to `America/Vancouver` (or another Pacific zone) before taking the hour, the day, or a 30-minute window. That shift moves a daytime pattern into the overnight hours.
 - Evidence from a full-table query: as UTC, 91.0% of rows are in 07:00–22:00 and 5.4% are in 00:00–05:00. As Pacific, those shares are 56.6% and 33.9%. UBC, Waterfront Station, and Park Royal Mall each prefer UTC. 18:00 in the table is 18:00 UTC, not 6pm Pacific.
 - On the Serverless Starter Warehouse the session is `Etc/UTC`, so `hour(timestamp)` and `window(timestamp, '30 minutes')` are already UTC. If a session timezone is not UTC, convert to UTC first.
-- Default temporal analysis to 30-minute bins. That is the grain the data was synthesized at.
-- The check lives in [notebooks/01_timestamp_timezone.py](notebooks/01_timestamp_timezone.py). Do not redo it unless the table is reloaded.
+- Default temporal analysis to 30-minute bins. At Waterfront Station those 14,592 bins (every bin from `2025-11-01 00:00Z` through `2026-08-31 23:30Z`) are all occupied, and rows are spread evenly inside each bin (minute offsets 0–29 each hold about 268,000 of 8,060,012 rows). The 30-minute window is the coverage grid, not a snapped event clock. Do not snap timestamps to `:00` or `:30`.
+- Waterfront `dwell_time` is an integer minute from 1 to 17,941 (median 53). 3.1% are multiples of 30.
+- The timezone check lives in [notebooks/01_timestamp_timezone.py](notebooks/01_timestamp_timezone.py). The grain and identity check lives in [notebooks/02_grain_and_identity.py](notebooks/02_grain_and_identity.py). Do not redo either unless the table is reloaded.
 
 ## Build constraints
 
