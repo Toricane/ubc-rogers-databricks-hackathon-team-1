@@ -128,12 +128,15 @@ export function GettingHomeTab({
     }
   }
 
-  // Fit to Waterfront and the route shapes (sampled); far home-area dots and crossings may fall outside.
+  // Fit to Waterfront and the route shapes only, so toggling a crossing never moves the map.
+  // Built from `routes` (stable order), not from state-dependent chips or draw order.
   const points: [number, number][] = [
     [m.ref.site.lat, m.ref.site.lng],
-    ...drawOrder.flatMap((r) => r.shape.filter((_, i) => i % 10 === 0 || i === r.shape.length - 1)),
-    // Room for each chip beside its route end (left or right), so no chip is clipped at the map edge.
-    ...chips.filter((c) => c.left && c.at[1] < m.ref.site.lng).map((c) => [c.at[0], c.at[1] - 0.2] as [number, number]),
+    ...routes.filter((r) => r.shape.length >= 2).flatMap((r) => r.shape.filter((_, i) => i % 10 === 0 || i === r.shape.length - 1)),
+    // Room for chips that sit left of route ends west of Waterfront, so they are not clipped at the edge.
+    ...routes
+      .filter((r) => r.shape.length >= 2 && r.shape[r.shape.length - 1][1] < m.ref.site.lng)
+      .map((r) => [r.shape[r.shape.length - 1][0], r.shape[r.shape.length - 1][1] - 0.2] as [number, number]),
   ];
 
   /** Point ~90% along the shape and the bearing of the last stretch, for a direction arrow near the end. */
@@ -150,7 +153,10 @@ export function GettingHomeTab({
 
   return (
     <>
-      <h1 className="headline"><Headline m={m} /></h1>
+      {/* One line so the map box keeps its size when the headline changes; full text on hover. */}
+      <h1 className="headline one-line" onMouseEnter={(e) => (e.currentTarget.title = e.currentTarget.textContent ?? "")}>
+        <Headline m={m} />
+      </h1>
 
       <div className="split split-wide">
         <MapFrame

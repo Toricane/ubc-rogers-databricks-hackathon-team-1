@@ -89,6 +89,7 @@ button {
 }
 .question { color: var(--muted); font-size: var(--fs-small); font-weight: 600; margin: 0; }
 .headline { font-size: var(--fs-headline); font-weight: 700; margin: 0; line-height: 1.2; }
+.headline.one-line { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 .card {
   background: var(--surface);
