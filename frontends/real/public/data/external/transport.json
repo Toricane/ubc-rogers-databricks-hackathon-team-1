@@ -1,0 +1,59 @@
+{
+  "sources": {
+    "translink_gtfs": {
+      "title": "TransLink static GTFS feed (google_transit.zip), feed_version 26SEP_20260925",
+      "url": "https://gtfs-static.translink.ca/gtfs/google_transit.zip",
+      "fetched": "2026-09-26"
+    },
+    "translink_tsg_2018": {
+      "title": "TransLink, Transit Service Guidelines 2018 (public summary), 3.1 Vehicle Capacity Reference Table",
+      "url": "https://www.translink.ca/-/media/translink/documents/plans-and-projects/managing-the-transit-network/transit-oriented-communities/transit-services-guidelines-public-summary.pdf",
+      "fetched": "2026-09-26"
+    },
+    "translink_special_events": {
+      "title": "TransLink, Planned Special Events",
+      "url": "https://www.translink.ca/about-us/doing-business-with-translink/planned-special-events",
+      "fetched": "2026-09-26"
+    },
+    "team_assumption": {
+      "title": "Team assumption",
+      "url": null
+    }
+  },
+  "notes": [
+    "Routes in public/data/internal/dispatch/transit.json come from notebooks/dispatch_transit.py run on this feed. The feed covers 2026-09-07 to 2027-01-03, not July 2026; a representative weekday (2026-10-07) stands in for the typical weekday schedule. It is a static schedule, not real-time."
+  ],
+  "gtfs": {
+    "url": "https://gtfs-static.translink.ca/gtfs/google_transit.zip",
+    "feed_publisher": "TransLink",
+    "feed_version": "26SEP_20260925",
+    "feed_start": "2026-09-07",
+    "feed_end": "2027-01-03",
+    "service_date_used": "2026-10-07",
+    "fetched": "2026-09-26",
+    "source": "translink_gtfs",
+    "licence_note": "TransLink open data, used under TransLink's Transit Data Terms of Use (https://www.translink.ca/about-us/doing-business-with-translink/app-developer-resources). Not an official TransLink product."
+  },
+  "bus_capacity": {
+    "value": 50,
+    "unit": "passengers per standard 40-ft bus",
+    "source": "translink_tsg_2018",
+    "quote": "Standard Bus — Average Seated Capacity 35, Average Practical Capacity 50",
+    "max_load": {
+      "value": 77,
+      "source": "translink_special_events",
+      "quote": "Conventional 40-foot Bus: 36 seats, maximum passenger load of 77"
+    },
+    "note": "Practical capacity is used for planning replacement buses; the maximum load is the crush ceiling."
+  },
+  "layover_min": {
+    "value": 10,
+    "unit": "minutes per end of a replacement-bus round trip",
+    "source": "team_assumption",
+    "note": "TransLink's guidelines exclude recovery (layover) time from running time but give no figure; 10 minutes per end is a team assumption."
+  },
+  "rail_note": {
+    "text": "Rail (SkyTrain, West Coast Express) and ferry (SeaBus) rows describe the normal scheduled service to each home area. They are not something buses replace one-for-one; replacement-bus sizing uses bus_capacity only.",
+    "source": "team_assumption"
+  }
+}

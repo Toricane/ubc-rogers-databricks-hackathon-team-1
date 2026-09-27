@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { createAdapter, StaticAdapter, type SnapshotManifest } from "./data/adapter";
-import type { CrossingStatus, Hazard, HazardId, Incident, PresenceRow, Rate, Reference } from "./data/types";
+import type { CrossingStatus, DispatchRow, Hazard, HazardId, Incident, PresenceRow, Rate, Reference, Transit, Transport } from "./data/types";
 import { lastFetchSource } from "./lib/drivebc";
 import { SLOT_MIN, addDays, fromMin, shortDate, stepSlot, weekday } from "./lib/time";
 import { buildModel, fmt } from "./model";
@@ -9,7 +9,7 @@ import { InfoDrawer } from "./components/InfoDrawer";
 import { LogoMark, Wordmark } from "./components/Logo";
 import { Splash } from "./components/Splash";
 import { SituationTab } from "./tabs/Situation";
-import { CrossingsTab } from "./tabs/Crossings";
+import { GettingHomeTab } from "./tabs/GettingHome";
 import { SendPeopleTab } from "./tabs/SendPeople";
 import { SuppliesTab } from "./tabs/Supplies";
 import { AlertTab } from "./tabs/Alert";
@@ -18,7 +18,7 @@ type TabId = 1 | 2 | 3 | 4 | 5;
 
 const TABS: { id: TabId; label: string; question: string }[] = [
   { id: 1, label: "Situation", question: "How many people are in the area, and can they get home?" },
-  { id: 2, label: "Crossings", question: "Which ways home are open?" },
+  { id: 2, label: "Getting home", question: "Which ways home are open, and which buses get people there?" },
   { id: 3, label: "Where to send people", question: "Where do stranded people go?" },
   { id: 4, label: "Supplies", question: "What do I deliver to each hub?" },
   { id: 5, label: "Alert", question: "What do I tell people in the area?" },
@@ -80,6 +80,11 @@ export default function App() {
   const [refreshing, setRefreshing] = useState(false);
   const [refreshNote, setRefreshNote] = useState<string | null>(null);
   const [mock, setMock] = useState(adapter.isMock());
+  const [dispatch, setDispatch] = useState<DispatchRow[] | null>(null);
+  const [dispatchError, setDispatchError] = useState<string | null>(null);
+  const [transit, setTransit] = useState<Transit | null>(null);
+  const [transport, setTransport] = useState<Transport | null>(null);
+  const [busSetupError, setBusSetupError] = useState<string | null>(null);
 
   const [tab, setTab] = useState<TabId>(1);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -130,6 +135,37 @@ export default function App() {
         if (stale) return;
         setRows(null);
         setPresenceError(e instanceof Error ? e.message : String(e));
+      });
+    return () => {
+      stale = true;
+    };
+  }, [adapter, date, slot]);
+
+  // Tab 2 routes and bus settings. A failure here only affects tab 2.
+  useEffect(() => {
+    Promise.all([adapter.getTransit(), adapter.getTransport()])
+      .then(([t, tp]) => {
+        setTransit(t);
+        setTransport(tp);
+      })
+      .catch((e) => setBusSetupError(e instanceof Error ? e.message : String(e)));
+  }, [adapter]);
+
+  // Departures for tab 2 at the current date and slot. Missing dates are an error, never mock numbers.
+  useEffect(() => {
+    if (!date || !slot) return;
+    let stale = false;
+    adapter
+      .getDispatch(date, slot)
+      .then((d) => {
+        if (stale) return;
+        setDispatch(d);
+        setDispatchError(null);
+      })
+      .catch((e) => {
+        if (stale) return;
+        setDispatch(null);
+        setDispatchError(e instanceof Error ? e.message : String(e));
       });
     return () => {
       stale = true;
@@ -212,15 +248,15 @@ export default function App() {
     if (!ref || !incident || !rows) return null;
     return buildModel({
       ref, incident, hazard: hazards.find((h) => h.id === incident.hazard), date, slot, rows,
-      base, overrides, maxPerHub, rates, onHand,
+      base, overrides, maxPerHub, rates, onHand, dispatch, dispatchError, transit, transport,
     });
-  }, [ref, incident, hazards, date, slot, rows, base, overrides, maxPerHub, rates, onHand]);
+  }, [ref, incident, hazards, date, slot, rows, base, overrides, maxPerHub, rates, onHand, dispatch, dispatchError, transit, transport]);
 
   const badge = (id: TabId): number | null => {
     if (!model) return null;
     switch (id) {
       case 1: return model.sit.total;
-      case 2: return model.closed.size;
+      case 2: return model.busesNeeded > 0 ? model.busesNeeded : model.closed.size;
       case 3: return model.st.total;
       case 4: return model.plan.active.length;
       case 5: return model.alert ? model.alert.split("\n").length : 0;
@@ -296,9 +332,9 @@ export default function App() {
         {!model && !error && !presenceError && <p className="muted">{incident ? "Loading…" : "Choose an incident to start."}</p>}
         {model && tab === 1 && <SituationTab m={model} offline={OFFLINE} />}
         {model && tab === 2 && (
-          <CrossingsTab
+          <GettingHomeTab
             m={model} offline={OFFLINE} live onToggle={toggle}
-            onRefresh={refresh} refreshing={refreshing} refreshNote={refreshNote}
+            onRefresh={refresh} refreshing={refreshing} refreshNote={refreshNote} setupError={busSetupError}
           />
         )}
         {model && tab === 3 && <SendPeopleTab m={model} offline={OFFLINE} maxPerHub={maxPerHub} onMaxPerHub={setMaxPerHub} />}

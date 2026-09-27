@@ -2,8 +2,9 @@
 
 Read-only. Authenticates through the signed-in Databricks CLI; no token is written to disk.
 
-    python scripts/export_databricks.py                       # pitch dates
-    python scripts/export_databricks.py 2026-08-22 2026-08-23  # specific dates
+    python scripts/export_databricks.py                       # pitch dates + dispatch tables
+    python scripts/export_databricks.py 2026-08-22 2026-08-23  # specific dates + dispatch tables
+    python scripts/export_databricks.py --dispatch-only        # only the dispatch tables
     set DATABRICKS_CLI=C:\\path\\to\\databricks.exe  (if the CLI isn't on PATH)
     set DATABRICKS_CONFIG_PROFILE=workspace1         (CLI profile, default DEFAULT)
 
@@ -12,6 +13,10 @@ from workspace.rogers_waterfront_minute.silver_origin_minute sampled at :00 and 
 Counts are exported as-is (no suppression). Clock strings are kept as recorded.
 Every slot is checked against gold_activity_minute (total and four buckets); the
 export stops if any slot disagrees.
+
+Dispatch ("Getting home" tab): gold_route_events, gold_route_demand and gold_route_transit
+(built by notebooks/05_dispatch.py) are written to public/data/internal/dispatch/. Demand
+`present` is checked against gold total_count for every slot.
 """
 import datetime as dt
 import json
@@ -31,6 +36,10 @@ LOCATION = "Waterfront Station"
 PITCH_DATES = ["2025-12-17", "2025-12-18", "2026-07-22", "2026-07-23", "2026-08-22", "2026-08-23"]
 OUT = Path(__file__).resolve().parent.parent / "public" / "data" / "internal"
 BUCKETS = ["local_waterfront", "vancouver_city", "metro_vancouver", "outside_metro_vancouver"]
+EVENTS = "workspace.rogers_waterfront_minute.gold_route_events"
+DEMAND = "workspace.rogers_waterfront_minute.gold_route_demand"
+TRANSIT = "workspace.rogers_waterfront_minute.gold_route_transit"
+EXTERNAL = OUT.parent / "external"
 
 _token = None
 
@@ -139,11 +148,84 @@ def export_day(day: str) -> dict:
     }
 
 
+DEMAND_SQL = f"""
+SELECT slot_start, origin, present, departing_30m
+FROM {DEMAND}
+WHERE date = to_date(:d)
+ORDER BY slot_start, origin
+"""
+
+TRANSIT_SQL = f"""
+SELECT origin, crossing_id, route_short_name, route_long_name, mode,
+  board_stop_name, board_lat, board_lng, alight_stop_name, alight_lat, alight_lng,
+  one_way_min, trips_per_hour_pm, shape_json, feed_version
+FROM {TRANSIT}
+ORDER BY origin, trips_per_hour_pm DESC
+"""
+
+
+def export_dispatch() -> dict:
+    """Write dispatch/{date}.json, dispatch/transit.json and dispatch/dates.json from the dispatch tables."""
+    out = OUT / "dispatch"
+    out.mkdir(parents=True, exist_ok=True)
+    events = sql(f"SELECT event_id, CAST(date AS STRING) FROM {EVENTS} ORDER BY date", [])
+    days = sorted({d for _, d in events} | {str(dt.date.fromisoformat(d) + dt.timedelta(days=1)) for _, d in events})
+
+    meta = {}
+    for day in days:
+        params = [{"name": "loc", "value": LOCATION}, {"name": "d", "value": day}]
+        rows = [{"slot_start": s, "origin": o, "present": int(p), "departing_30m": int(dep)}
+                for s, o, p, dep in sql(DEMAND_SQL, [{"name": "d", "value": day}])]
+        gold = {r[0]: int(r[1]) for r in sql(GOLD_SQL, params)}
+        per_slot = {}
+        for r in rows:
+            per_slot[r["slot_start"]] = per_slot.get(r["slot_start"], 0) + r["present"]
+        problems = []
+        if len(rows) != 48 * 36:
+            problems.append(f"{len(rows)} rows, expected 1728")
+        problems += [f"{s}: demand {n} != gold {gold.get(s)}" for s, n in per_slot.items() if gold.get(s) != n]
+        if problems:
+            raise SystemExit(f"{day}: dispatch export failed checks:\n  " + "\n  ".join(problems))
+        with open(out / f"{day}.json", "w", encoding="utf-8", newline="\n") as f:
+            json.dump(rows, f, ensure_ascii=False, separators=(",", ":"))
+        meta[day] = {"rows": len(rows), "departing_total": sum(r["departing_30m"] for r in rows),
+                     "gold_check": "present matches gold total_count in all 48 slots"}
+        print(f"dispatch {day}: {len(rows)} rows, gold check OK")
+
+    routes, versions = [], set()
+    for (origin, crossing, short, long_, mode, bname, blat, blng, aname, alat, alng,
+         one_way, tph, shape, version) in sql(TRANSIT_SQL, []):
+        routes.append({
+            "origin": origin, "crossing_id": crossing, "route_short_name": short, "route_long_name": long_,
+            "mode": mode,
+            "board": {"name": bname, "lat": float(blat), "lng": float(blng)},
+            "alight": {"name": aname, "lat": float(alat), "lng": float(alng)},
+            "one_way_min": float(one_way), "trips_per_hour_pm": float(tph), "shape": json.loads(shape),
+        })
+        versions.add(version)
+    transport = EXTERNAL / "transport.json"
+    gtfs = json.loads(transport.read_text(encoding="utf-8")).get("gtfs", {}) if transport.exists() else {}
+    feed = {"version": ", ".join(sorted(v for v in versions if v)), "start": gtfs.get("feed_start"),
+            "end": gtfs.get("feed_end"), "url": gtfs.get("url")}
+    with open(out / "transit.json", "w", encoding="utf-8", newline="\n") as f:
+        json.dump({"feed": feed, "routes": routes}, f, ensure_ascii=False, separators=(",", ":"))
+    with open(out / "dates.json", "w", encoding="utf-8", newline="\n") as f:
+        json.dump(days, f)
+    print(f"dispatch transit: {len(routes)} routes; dates {days}")
+    return {"tables": {"events": EVENTS, "demand": DEMAND, "transit": TRANSIT},
+            "events": [e for e, _ in events], "dates": days, "days": meta, "routes": len(routes), "feed": feed}
+
+
 def main():
-    days = sys.argv[1:] or PITCH_DATES
+    args = sys.argv[1:]
+    dispatch_only = "--dispatch-only" in args
+    days = [a for a in args if not a.startswith("--")] or PITCH_DATES
     for d in days:
         dt.date.fromisoformat(d)
     OUT.mkdir(parents=True, exist_ok=True)
+    dispatch = export_dispatch()
+    if dispatch_only:
+        days = []
     results = []
     for d in days:
         r = export_day(d)
@@ -167,6 +249,7 @@ def main():
         "exported_at_utc": dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "dates": present,
         "days": {d: days_meta[d] for d in present if d in days_meta},
+        "dispatch": dispatch,
     }
     with open(manifest_path, "w", encoding="utf-8", newline="\n") as f:
         json.dump(manifest, f, ensure_ascii=False, indent=2)

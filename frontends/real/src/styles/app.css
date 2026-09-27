@@ -413,3 +413,9 @@ button {
 .drawer { border-left: 2px solid var(--line-strong); }
 .card-title { color: var(--text); }
 .group-card:hover, .supply-card:hover { box-shadow: 0 0 0 1px var(--line-strong), var(--shadow-card); }
+
+/* Tab 2: buses home */
+.status.divert { color: var(--brand-dark); }
+.row-divert td { background: var(--brand-tint); }
+.bus-table td { font-size: var(--fs-small); }
+.bus-table th { white-space: nowrap; }

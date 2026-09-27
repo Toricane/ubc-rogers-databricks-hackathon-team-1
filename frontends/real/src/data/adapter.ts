@@ -1,7 +1,7 @@
 // One interface, three implementations. Pick with ?data=mock|static|databricks or VITE_DATA_SOURCE.
 // Default is "static" (exported Databricks snapshots). Mock is only used when asked for explicitly.
-import type { CellSafeData, HazardId, PresenceRow } from "./types";
-import { loadCrossingStatus, loadHazards, loadIncidents, loadRates, loadReference } from "./external";
+import type { DispatchRow, CellSafeData, HazardId, PresenceRow, Transit } from "./types";
+import { loadCrossingStatus, loadHazards, loadIncidents, loadRates, loadReference, loadTransport } from "./external";
 import { mockDates, mockPresence } from "./mock";
 
 export type { CellSafeData } from "./types";
@@ -12,6 +12,7 @@ abstract class ExternalBase {
   getHazards() { return loadHazards(); }
   getIncidents() { return loadIncidents(); }
   getCrossingStatus(mode: "live" | "incident", incidentId?: string) { return loadCrossingStatus(mode, incidentId); }
+  getTransport() { return loadTransport(); }
 }
 
 export class MockAdapter extends ExternalBase implements CellSafeData {
@@ -21,6 +22,11 @@ export class MockAdapter extends ExternalBase implements CellSafeData {
   async getPresence(date: string, slot: string): Promise<PresenceRow[]> {
     const { origins } = await loadReference();
     return mockPresence(origins.map((o) => o.name), date, slot);
+  }
+  // No mock dispatch numbers: tab 2 shows routes only.
+  async getDispatch(_date: string, _slot: string): Promise<DispatchRow[]> { return []; }
+  async getTransit(): Promise<Transit> {
+    return { feed: { version: null, start: null, end: null, url: null }, routes: [] };
   }
 }
 
@@ -76,6 +82,46 @@ export class StaticAdapter extends ExternalBase implements CellSafeData {
     if (at.length === 0) throw new Error(`The ${date} snapshot has no rows for ${slot}.`);
     return at.map(({ origin, present }) => ({ origin, present }));
   }
+
+  private dispatchDates: Promise<string[]> | null = null;
+  private dispatchDays = new Map<string, Promise<({ slot_start: string } & DispatchRow)[] | null>>();
+  private transit: Promise<Transit> | null = null;
+
+  getDispatchDates() {
+    this.dispatchDates ??= tryJson<string[]>(`${INTERNAL}dispatch/dates.json`).then((d) => (Array.isArray(d) ? d : []));
+    return this.dispatchDates;
+  }
+
+  async getDispatch(date: string, slot: string): Promise<DispatchRow[]> {
+    const dates = await this.getDispatchDates();
+    if (!dates.includes(date)) throw new MissingDispatchError(date);
+    if (!this.dispatchDays.has(date)) this.dispatchDays.set(date, tryJson(`${INTERNAL}dispatch/${date}.json`));
+    const rows = await this.dispatchDays.get(date)!;
+    if (!Array.isArray(rows)) {
+      this.dispatchDays.delete(date);
+      throw new MissingDispatchError(date);
+    }
+    const at = rows.filter((r) => r.slot_start === slot);
+    if (at.length === 0) throw new Error(`The ${date} dispatch snapshot has no rows for ${slot}.`);
+    return at.map(({ origin, present, departing_30m }) => ({ origin, present, departing_30m }));
+  }
+
+  getTransit() {
+    this.transit ??= tryJson<Transit>(`${INTERNAL}dispatch/transit.json`).then((t) => {
+      if (!t || !Array.isArray(t.routes)) {
+        this.transit = null;
+        throw new Error("No TransLink route export: public/data/internal/dispatch/transit.json is missing.");
+      }
+      return t;
+    });
+    return this.transit;
+  }
+}
+
+export class MissingDispatchError extends Error {
+  constructor(readonly date: string) {
+    super(`No dispatch snapshot for ${date}.`);
+  }
 }
 
 export class MissingSnapshotError extends Error {
@@ -104,6 +150,12 @@ export class DatabricksAdapter extends ExternalBase implements CellSafeData {
   }
   async getPresence(_date: string, _slot: string): Promise<PresenceRow[]> {
     throw new Error("DatabricksAdapter is a stub (/api/presence). See NEXT_STEPS.md.");
+  }
+  async getDispatch(_date: string, _slot: string): Promise<DispatchRow[]> {
+    throw new Error("DatabricksAdapter is a stub (/api/dispatch). See NEXT_STEPS.md.");
+  }
+  async getTransit(): Promise<Transit> {
+    throw new Error("DatabricksAdapter is a stub (/api/transit). See NEXT_STEPS.md.");
   }
 }
 

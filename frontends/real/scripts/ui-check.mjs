@@ -27,6 +27,7 @@ const check = (ok, msg) => {
 };
 const headline = () => page.locator(".headline").first().innerText();
 const badges = () => page.locator(".tab .badge").allInnerTexts();
+const xrow = (name) => page.locator(".xing-table tr", { hasText: name });
 const shot = async (name) => outDir && page.screenshot({ path: `${outDir}/${name}.png` });
 const noScroll = async () =>
   page.evaluate(() => {
@@ -82,13 +83,13 @@ await page.keyboard.press("1");
 await page.waitForTimeout(300);
 before.tab1 = await page.locator(".group-card.g-metro").innerText();
 
-// Toggle Lions Gate and Ironworkers closed on tab 2.
+// Toggle Lions Gate and Ironworkers closed on tab 2 (Getting home).
 await page.keyboard.press("2");
 await page.waitForTimeout(500);
 for (const name of ["Lions Gate Bridge", "Ironworkers Memorial Bridge"]) {
-  await page.locator("tr", { hasText: name }).locator("button.toggle").click();
+  await xrow(name).locator("button.toggle").click();
   await page.waitForTimeout(250);
-  const txt = await page.locator("tr", { hasText: name }).innerText();
+  const txt = await xrow(name).innerText();
   check(txt.includes("Closed") && txt.includes("Set by officer"), `${name} shows ✕ Closed · Set by officer`);
 }
 check((await page.locator(".leaflet-marker-icon .xing.closed").count()) === 2, "map shows 2 closed crossing badges");
@@ -97,6 +98,7 @@ await shot("tab2-after");
 
 const after = { badges: await badges() };
 console.log("badges before:", before.badges.join(" | "), " after:", after.badges.join(" | "));
+// Tab 2's badge is the closed count unless buses are sized (Aug 22 has no dispatch snapshot, so no bus counts).
 check(after.badges[1] === "2", "tab 2 badge shows 2 closed");
 console.log("note: SeaBus is still open, so North Shore residents can still get home; tabs 1/3/4 only change once they are stranded");
 
@@ -127,7 +129,7 @@ await shot("tab5-after");
 // Close SeaBus too: the North Shore is now stranded, so tabs 1, 3, 4 must change.
 await page.keyboard.press("2");
 await page.waitForTimeout(300);
-await page.locator("tr", { hasText: "SeaBus" }).locator("button.toggle").click();
+await xrow("SeaBus").locator("button.toggle").click();
 await page.waitForTimeout(300);
 const b3 = await badges();
 console.log("badges with SeaBus also closed:", b3.join(" | "));
@@ -206,6 +208,39 @@ for (const k of ["1", "2", "3", "4", "5"]) {
   await page.waitForTimeout(300);
   check(await noScroll(), `tab ${k} still fits after the toggles`);
 }
+// Jul 22 17:00 with SeaBus closed: North Vancouver moves to a scheduled bus over an open bridge, with a bus count.
+// Reload for a clean state (all crossings open); the demo opens on Jul 22 17:00.
+await page.goto(`${base}?demo=1`);
+await page.keyboard.press("Space");
+await page.waitForSelector(".splash", { state: "detached", timeout: 3000 });
+await page.waitForSelector(".group-cards");
+await page.waitForTimeout(800);
+check((await page.locator(".time-step .time").innerText()) === "17:00", "Jul 22 opens at 17:00");
+await page.keyboard.press("2");
+await page.waitForTimeout(800);
+check((await page.locator(".route-line").count()) > 0, "tab 2 draws scheduled routes home");
+check((await page.locator(".origin-dot").count()) > 0, "tab 2 draws home-area dots");
+await xrow("SeaBus").locator("button.toggle").click();
+await page.waitForTimeout(600);
+const nv = await page.locator(".bus-table tr.row-divert", { hasText: "North Vancouver" }).innerText().catch(() => "");
+console.log("North Vancouver row:", nv.replace(/\s+/g, " "));
+check(/Via/.test(nv) && /\d/.test(nv.split("\t")[4] ?? nv), "North Vancouver is diverted with a bus count");
+const chip = page.locator(".route-chip.diverted").first();
+const label = await chip.innerText().catch(() => "");
+check(/\d+ bus(es)? → North Vancouver/.test(label), `diverted chip names buses and home area: ${label}`);
+// The chip sits at the route's end (home-area side), well away from the Waterfront pin.
+const cb = await chip.boundingBox();
+const wb = await page.locator(".wf-pin").first().boundingBox();
+const dist = cb && wb ? Math.hypot(cb.x - wb.x, cb.y - wb.y) : 0;
+check(dist > 80, `diverted chip is ${Math.round(dist)} px from Waterfront (> 80)`);
+const chipCount = await page.locator(".route-chip").count();
+check(chipCount >= 2, `bus-route home areas have chips (${chipCount}); normal rail lines are named by their home-area label`);
+check((await page.locator(".route-casing").count()) > 0, "diverted route has a white casing");
+console.log("tab 2 headline (Jul 22, SeaBus closed):", await headline());
+check(/SeaBus closed: send \d+ bus/.test(await headline()), "headline names the buses to send");
+check(await noScroll(), "tab 2 fits with routes and bus table");
+await shot("tab2-jul22-seabus");
+
 check(errors.length === 0, `no console errors${errors.length ? ": " + errors.join(" / ") : ""}`);
 await browser.close();
 console.log(failures ? `${failures} check(s) failed` : "All UI checks passed");
