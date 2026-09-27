@@ -81,4 +81,4 @@ const server = http.createServer((req, res) => {
   else fs.createReadStream(file).pipe(res);
 });
 
-server.listen(PORT, HOST, () => console.log(`Five Bars 3G on http://${HOST}:${PORT}`));
+server.listen(PORT, HOST, () => console.log(`Cell-Safe on http://${HOST}:${PORT}`));

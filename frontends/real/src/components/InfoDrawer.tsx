@@ -40,10 +40,11 @@ export function InfoDrawer({
               <li><strong>Mock numbers.</strong> These are made up for development, not Databricks results.</li>
             ) : (
               <li>
-                <strong>Historical snapshot.</strong> Exported from Databricks
+                <strong>Simulated "today".</strong> The tool replays Wednesday, July 22, 2026 (a heat and smoke day) from
+                the synthetic table as if it were happening now. "Live" means the officer works it minute by minute; the
+                numbers are not a real-time feed. Exported from Databricks
                 {manifest && <> table <code>{manifest.source.presence_table}</code> on {manifest.exported_at_utc.slice(0, 10)}</>}
-                , and checked slot by slot against <code>gold_activity_minute</code>. Source period November 2025 to August 2026.
-                {manifest && <> Dates available: {manifest.dates.join(", ")}.</>}
+                , and checked slot by slot against <code>gold_activity_minute</code>.
               </li>
             )}
             <li>Times are shown as recorded. The clock is assumed to be Vancouver local time; that is not confirmed.</li>

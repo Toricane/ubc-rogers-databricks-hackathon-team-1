@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { createAdapter, StaticAdapter, type SnapshotManifest } from "./data/adapter";
-import type { CrossingStatus, Hazard, Incident, PresenceRow, Rate, Reference } from "./data/types";
+import type { CrossingStatus, Hazard, HazardId, Incident, PresenceRow, Rate, Reference } from "./data/types";
 import { lastFetchSource } from "./lib/drivebc";
-import { shortDate, stepSlot } from "./lib/time";
-import { buildModel, fmt, incidentName } from "./model";
+import { SLOT_MIN, addDays, fromMin, shortDate, stepSlot, weekday } from "./lib/time";
+import { buildModel, fmt } from "./model";
 import { ChangeDialog } from "./components/ChangeDialog";
 import { InfoDrawer } from "./components/InfoDrawer";
+import { LogoMark, Wordmark } from "./components/Logo";
+import { Splash } from "./components/Splash";
 import { SituationTab } from "./tabs/Situation";
 import { CrossingsTab } from "./tabs/Crossings";
 import { SendPeopleTab } from "./tabs/SendPeople";
@@ -26,14 +28,37 @@ const params = new URLSearchParams(window.location.search);
 const DEMO = params.get("demo") === "1";
 const OFFLINE = params.get("offline") === "1";
 
-function todayLocal(): string {
+// The tool plays one day of the synthetic data as if it were today: Wed, Jul 22, 2026 (heat and smoke).
+export const SCENARIO_DATE = "2026-07-22";
+const SCENARIO_NEXT_DATE = addDays(SCENARIO_DATE, 1);
+const SCENARIO_INCIDENT = "jul22";
+const DEMO_SLOT = "17:00";
+
+/** Current wall-clock time, rounded down to the 30-minute slot. */
+function nowSlot(): string {
   const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  const m = d.getHours() * 60 + d.getMinutes();
+  return fromMin(m - (m % SLOT_MIN));
+}
+
+function scenarioIncident(hazard: HazardId, hazards: Hazard[], sourced: Incident | undefined): Incident {
+  if (sourced && sourced.hazard === hazard) return { ...sourced, date: SCENARIO_DATE };
+  return {
+    id: `today-${hazard}`,
+    date: SCENARIO_DATE,
+    hazard,
+    title: hazards.find((h) => h.id === hazard)?.label ?? hazard,
+    description: "",
+    slot_start: null,
+    closed_crossings: [],
+    duration_h: sourced?.duration_h ?? 72,
+    source_url: null,
+  };
 }
 
 export default function App() {
   const adapter = useMemo(() => createAdapter(), []);
-  const today = useMemo(todayLocal, []);
+  const [splash, setSplash] = useState(true);
 
   const [ref, setRef] = useState<Reference | null>(null);
   const [incidents, setIncidents] = useState<Incident[]>([]);
@@ -60,7 +85,6 @@ export default function App() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
 
-  const live = incident !== null && incident.date === today;
 
   // Reference data, incidents, dates.
   useEffect(() => {
@@ -72,9 +96,8 @@ export default function App() {
         setDates(ds);
         setMock(adapter.isMock());
         if (adapter instanceof StaticAdapter) adapter.getManifest().then(setManifest);
-        const demo = DEMO ? inc.find((i) => i.id === "aug22") : undefined;
-        if (demo) openIncident(demo, demo.slot_start ?? "17:00");
-        else setDialogOpen(true);
+        const sourced = inc.find((i) => i.id === SCENARIO_INCIDENT);
+        openIncident(scenarioIncident(sourced?.hazard ?? "heat_smoke", hz, sourced), DEMO ? DEMO_SLOT : nowSlot());
       })
       .catch((e) => setError(String(e)));
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -117,13 +140,16 @@ export default function App() {
   useEffect(() => {
     if (!incident) return;
     adapter.getRates(incident.hazard).then(setRates);
-    adapter
-      .getCrossingStatus(incident.date === today ? "live" : "incident", incident.id)
-      .then((s) => {
-        setBase(s);
-        if (incident.date === today) setRefreshNote(lastFetchSource() === "fallback" ? "DriveBC unreachable — showing saved snapshot" : null);
-      });
-  }, [adapter, incident, today]);
+    // Crossings start as the incident record has them; the officer can pull DriveBC on demand.
+    adapter.getCrossingStatus("incident", incident.id).then(setBase);
+  }, [adapter, incident]);
+
+  const changeWeather = (h: HazardId) => {
+    const sourced = incidents.find((i) => i.id === SCENARIO_INCIDENT);
+    setIncident(scenarioIncident(h, hazards, sourced));
+    setOnHandState({});
+    setDialogOpen(false);
+  };
 
   const refresh = async () => {
     setRefreshing(true);
@@ -135,10 +161,17 @@ export default function App() {
     }
   };
 
+  // Time stays within the scenario day and the early hours after it.
+  const canStep = (dir: 1 | -1) => {
+    if (!date) return false;
+    const next = stepSlot(date, slot, dir);
+    return next.date === SCENARIO_DATE || next.date === SCENARIO_NEXT_DATE;
+  };
   const step = useCallback(
     (dir: 1 | -1) => {
       if (!date) return;
       const next = stepSlot(date, slot, dir);
+      if (next.date !== SCENARIO_DATE && next.date !== SCENARIO_NEXT_DATE) return;
       setDate(next.date);
       setSlot(next.slot);
     },
@@ -163,7 +196,7 @@ export default function App() {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const t = e.target as HTMLElement;
-      if (t.closest("input, textarea, select, dialog") || e.metaKey || e.ctrlKey || e.altKey) return;
+      if (splash || t.closest("input, textarea, select, dialog") || e.metaKey || e.ctrlKey || e.altKey) return;
       if (e.key === "ArrowLeft") step(-1);
       else if (e.key === "ArrowRight") step(1);
       else if (/^[1-5]$/.test(e.key)) setTab(Number(e.key) as TabId);
@@ -173,7 +206,7 @@ export default function App() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [step]);
+  }, [step, splash]);
 
   const model = useMemo(() => {
     if (!ref || !incident || !rows) return null;
@@ -195,47 +228,42 @@ export default function App() {
   };
 
   const current = TABS.find((t) => t.id === tab)!;
-  const name = incident ? incidentName(incident, shortDate) : "";
+  const dayLabel = date ? `${weekday(date)}, ${shortDate(date)}` : "";
+  const name = incident ? `${dayLabel} · ${incident.title}` : "";
 
   return (
     <div className="app">
       <header className="topbar">
-        <span className="product">Five Bars 3G</span>
-        <span className="topbar-sub">Waterfront Station area · Emergency Management duty officer</span>
-      </header>
-
-      <div className="incident">
-        <span className="label">INCIDENT</span>
-        {incident ? (
-          <span className="incident-text" title={incident.description}>
-            <span className="name">{name}</span>
-            <span className="desc">{incident.description}</span>
-          </span>
-        ) : (
-          <span className="name muted">No incident selected</span>
-        )}
-        <button className="btn" onClick={() => setDialogOpen(true)}>Change</button>
-        <span className="spacer" />
-        <span className="label">TIME</span>
-        <div className="time-step">
-          <button className="btn" aria-label="30 minutes earlier" onClick={() => step(-1)} disabled={!incident}>◀</button>
-          <span className="time-val">
-            <span className="num time">{slot || "--:--"}</span>
-            {date && date !== incident?.date && <span className="muted small num">{shortDate(date)}</span>}
-          </span>
-          <button className="btn" aria-label="30 minutes later" onClick={() => step(1)} disabled={!incident}>▶</button>
+        <div className="brand">
+          <LogoMark size={26} />
+          <Wordmark />
         </div>
-        {mock ? (
-          <span className="mock-badge">Mock data</span>
-        ) : adapter.kind === "static" ? (
-          <span
-            className="source-badge"
-            title={manifest ? `${manifest.source.presence_table} · exported ${manifest.exported_at_utc}` : undefined}
-          >
-            Historical snapshot · Databricks
-          </span>
-        ) : null}
-      </div>
+        <span className="topbar-divider" />
+        {incident ? (
+          <div className="incident-text" title={incident.description || incident.title}>
+            <span className="live-chip"><span className="live-dot" />Live</span>
+            <span className="name">{incident.title}</span>
+            {incident.description && <span className="desc">{incident.description}</span>}
+            <button className="btn btn-quiet" onClick={() => setDialogOpen(true)}>Change weather</button>
+          </div>
+        ) : (
+          <span className="muted">Loading…</span>
+        )}
+        <span className="spacer" />
+        <div className="time-step" title="Use the ← and → keys to move 30 minutes">
+          <button className="step-btn" aria-label="30 minutes earlier" onClick={() => step(-1)} disabled={!incident || !canStep(-1)}>
+            <span aria-hidden>‹</span> 30 min
+          </button>
+          <div className="time-now">
+            <span className="num time">{slot || "--:--"}</span>
+            <span className="day">{dayLabel}</span>
+          </div>
+          <button className="step-btn" aria-label="30 minutes later" onClick={() => step(1)} disabled={!incident || !canStep(1)}>
+            30 min <span aria-hidden>›</span>
+          </button>
+        </div>
+        {mock && <span className="mock-badge">Mock data</span>}
+      </header>
 
       <nav className="tabs" role="tablist">
         {TABS.map((t) => {
@@ -262,14 +290,14 @@ export default function App() {
         {error && <p className="status critical"><span aria-hidden>✕</span> Could not load data: {error}</p>}
         {!error && presenceError && incident && (
           <p className="status critical">
-            <span aria-hidden>✕</span> {presenceError} Only exported dates can be shown: {dates.map(shortDate).join(", ")}.
+            <span aria-hidden>✕</span> {presenceError}
           </p>
         )}
         {!model && !error && !presenceError && <p className="muted">{incident ? "Loading…" : "Choose an incident to start."}</p>}
         {model && tab === 1 && <SituationTab m={model} offline={OFFLINE} />}
         {model && tab === 2 && (
           <CrossingsTab
-            m={model} offline={OFFLINE} live={live} onToggle={toggle}
+            m={model} offline={OFFLINE} live onToggle={toggle}
             onRefresh={refresh} refreshing={refreshing} refreshNote={refreshNote}
           />
         )}
@@ -278,19 +306,17 @@ export default function App() {
         {model && tab === 5 && <AlertTab m={model} />}
       </main>
 
-      {incidents.length > 0 && (
+      {incident && hazards.length > 0 && (
         <ChangeDialog
           open={dialogOpen}
-          incidents={incidents}
           hazards={hazards}
-          dates={dates}
-          today={today}
-          current={incident}
-          onPick={openIncident}
-          onClose={() => incident && setDialogOpen(false)}
+          current={incident.hazard}
+          onPick={changeWeather}
+          onClose={() => setDialogOpen(false)}
         />
       )}
       <InfoDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} m={model} mock={mock} manifest={manifest} />
+      {splash && <Splash onDone={() => setSplash(false)} />}
     </div>
   );
 }

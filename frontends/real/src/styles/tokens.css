@@ -1,28 +1,35 @@
 :root {
-  /* Brand — inspired by Rogers/Databricks red; not official brand colours */
-  --brand: #E3242B;
-  --brand-dark: #B3141B;
-  --brand-tint: #FDECEC;
+  /* Brand — inspired by Rogers/Databricks red; not official brand colours.
+     Used as an accent only: logo, active tab, primary buttons, Waterfront pin. */
+  --brand: #D92D20;
+  --brand-dark: #B42318;
+  --brand-tint: #FEF3F2;
+  --brand-soft: #FDA29B;
 
-  /* Neutrals */
-  --bg: #F6F6F4;
+  /* Neutrals (cool, clean) */
+  --bg: #F5F6F8;
   --surface: #FFFFFF;
-  --border: #E4E4E0;
-  --text: #161B22;
-  --muted: #5A6470;
+  --surface-2: #F9FAFB;
+  --border: #FDA29B;       /* all dividers and control outlines: soft red */
+  --line-strong: #D92D20;  /* outlines of cards, maps, header and tab bar */
+  --line-soft: #FECDCA;    /* table row separators */
+  --text: #101828;
+  --muted: #667085;
   --on-brand: #FFFFFF;
-  --unused: #8A929C;
-  --scrim: rgba(22, 27, 34, .45);
-  --scrim-light: rgba(22, 27, 34, .35);
+  --unused: #98A2B3;
+  --scrim: rgba(16, 24, 40, .45);
+  --scrim-light: rgba(16, 24, 40, .30);
+  --on-dark-hover: rgba(255, 255, 255, .12);
+  --on-dark-line: rgba(255, 255, 255, .15);
 
   /* Status — always paired with an icon and a word */
   --critical: #9E0B1F;
-  --ok: #12A150;
+  --ok: #079455;
 
   /* Groups */
-  --g-vancouver: #00A3AD;
-  --g-metro: #6E3BFF;
-  --g-outside: #F5A700;
+  --g-vancouver: #0E9384;
+  --g-metro: #7A5AF8;
+  --g-outside: #F79009;
 
   /* Type */
   --font-ui: "Inter", system-ui, sans-serif;
@@ -33,10 +40,10 @@
   --fs-small: 12px;
 
   /* Shape */
-  --r-card: 6px;
-  --r-control: 4px;
+  --r-card: 10px;
+  --r-control: 8px;
   --edge: 4px;
-  --shadow-card: 0 1px 3px rgba(0, 0, 0, .08);
+  --shadow-card: 0 1px 2px rgba(217, 45, 32, .08), 0 4px 12px rgba(217, 45, 32, .08);
 
   /* Motion */
   --t-fast: 150ms;
