@@ -1,0 +1,186 @@
+{
+  "sources": {
+    "wikipedia": {
+      "title": "Wikipedia article coordinates and infobox 'carries' field",
+      "url": "https://en.wikipedia.org/",
+      "fetched": "2026-09-26"
+    },
+    "derived": {
+      "title": "Derived from cited Wikipedia coordinates (see note)",
+      "url": null
+    }
+  },
+  "matching": "A DriveBC Open511 event marks a crossing closed when it is within 1 km of the crossing AND (drivebc_road is null OR the event's road name equals drivebc_road). Road names use the Open511 vocabulary ('Highway 1', 'Highway 99', ...). Transit crossings are not in DriveBC and are set by the officer.",
+  "crossings": [
+    {
+      "id": "seabus",
+      "name": "SeaBus",
+      "kind": "transit",
+      "lat": 49.298132,
+      "lng": -123.097222,
+      "drivebc_road": null,
+      "source": "derived",
+      "note": "Midpoint of Waterfront station (49.285833, -123.111667) and Lonsdale Quay (49.310434, -123.082778) coordinates on Wikipedia.",
+      "source_urls": [
+        "https://en.wikipedia.org/wiki/Waterfront_station_(Vancouver)",
+        "https://en.wikipedia.org/wiki/Lonsdale_Quay"
+      ]
+    },
+    {
+      "id": "lions_gate",
+      "name": "Lions Gate Bridge",
+      "kind": "bridge",
+      "lat": 49.315278,
+      "lng": -123.138333,
+      "drivebc_road": "Highway 99",
+      "source": "wikipedia",
+      "note": "Carries Highway 1A / Highway 99 (Wikipedia infobox).",
+      "source_urls": [
+        "https://en.wikipedia.org/wiki/Lions_Gate_Bridge"
+      ]
+    },
+    {
+      "id": "ironworkers",
+      "name": "Ironworkers Memorial Bridge",
+      "kind": "bridge",
+      "lat": 49.295296,
+      "lng": -123.026276,
+      "drivebc_road": "Highway 1",
+      "source": "wikipedia",
+      "note": "Carries Highway 1 (Wikipedia infobox).",
+      "source_urls": [
+        "https://en.wikipedia.org/wiki/Ironworkers_Memorial_Second_Narrows_Crossing"
+      ]
+    },
+    {
+      "id": "canada_line",
+      "name": "Canada Line (North Arm Bridge)",
+      "kind": "transit",
+      "lat": 49.202222,
+      "lng": -123.117778,
+      "drivebc_road": null,
+      "source": "wikipedia",
+      "note": "SkyTrain Canada Line crossing of the Fraser North Arm.",
+      "source_urls": [
+        "https://en.wikipedia.org/wiki/North_Arm_Bridge"
+      ]
+    },
+    {
+      "id": "expo_line",
+      "name": "Expo Line (SkyBridge)",
+      "kind": "transit",
+      "lat": 49.205556,
+      "lng": -122.896944,
+      "drivebc_road": null,
+      "source": "wikipedia",
+      "note": "SkyTrain Expo Line crossing of the Fraser, New Westminster to Surrey.",
+      "source_urls": [
+        "https://en.wikipedia.org/wiki/SkyBridge_(TransLink)"
+      ]
+    },
+    {
+      "id": "oak_st",
+      "name": "Oak Street Bridge",
+      "kind": "bridge",
+      "lat": 49.199722,
+      "lng": -123.125556,
+      "drivebc_road": "Highway 99",
+      "source": "wikipedia",
+      "note": "Carries Highway 99 (Wikipedia infobox).",
+      "source_urls": [
+        "https://en.wikipedia.org/wiki/Oak_Street_Bridge"
+      ]
+    },
+    {
+      "id": "knight_st",
+      "name": "Knight Street Bridge",
+      "kind": "bridge",
+      "lat": 49.204084,
+      "lng": -123.077517,
+      "drivebc_road": null,
+      "source": "wikipedia",
+      "note": "Carries Knight Street, not a numbered highway (Wikipedia infobox); DriveBC matched by distance only.",
+      "source_urls": [
+        "https://en.wikipedia.org/wiki/Knight_Street_Bridge"
+      ]
+    },
+    {
+      "id": "arthur_laing",
+      "name": "Arthur Laing Bridge",
+      "kind": "bridge",
+      "lat": 49.199317,
+      "lng": -123.135817,
+      "drivebc_road": null,
+      "source": "wikipedia",
+      "note": "Carries Grant McConachie Way, not a numbered highway (Wikipedia infobox); DriveBC matched by distance only.",
+      "source_urls": [
+        "https://en.wikipedia.org/wiki/Arthur_Laing_Bridge"
+      ]
+    },
+    {
+      "id": "stalawasem",
+      "name": "stal̓əw̓asəm Bridge (formerly Pattullo)",
+      "kind": "bridge",
+      "lat": 49.208056,
+      "lng": -122.8925,
+      "drivebc_road": "Highway 1A",
+      "source": "wikipedia",
+      "note": "Carries Highway 1A / 99A (Wikipedia infobox). Officially opened February 14, 2026.",
+      "source_urls": [
+        "https://en.wikipedia.org/wiki/Stal̕əw̓asəm_Bridge"
+      ]
+    },
+    {
+      "id": "alex_fraser",
+      "name": "Alex Fraser Bridge",
+      "kind": "bridge",
+      "lat": 49.1598,
+      "lng": -122.9428,
+      "drivebc_road": "Highway 91",
+      "source": "wikipedia",
+      "note": "Carries Highway 91 (Wikipedia infobox).",
+      "source_urls": [
+        "https://en.wikipedia.org/wiki/Alex_Fraser_Bridge"
+      ]
+    },
+    {
+      "id": "port_mann",
+      "name": "Port Mann Bridge",
+      "kind": "bridge",
+      "lat": 49.219722,
+      "lng": -122.813056,
+      "drivebc_road": "Highway 1",
+      "source": "wikipedia",
+      "note": "Carries Highway 1 (Wikipedia infobox).",
+      "source_urls": [
+        "https://en.wikipedia.org/wiki/Port_Mann_Bridge"
+      ]
+    },
+    {
+      "id": "massey_tunnel",
+      "name": "George Massey Tunnel",
+      "kind": "tunnel",
+      "lat": 49.121663,
+      "lng": -123.075628,
+      "drivebc_road": "Highway 99",
+      "source": "wikipedia",
+      "note": "'It forms part of Highway 99.' (Wikipedia).",
+      "source_urls": [
+        "https://en.wikipedia.org/wiki/George_Massey_Tunnel"
+      ]
+    },
+    {
+      "id": "pitt_river",
+      "name": "Pitt River Bridge",
+      "kind": "bridge",
+      "lat": 49.2482,
+      "lng": -122.7297,
+      "drivebc_road": "Highway 7",
+      "source": "wikipedia",
+      "note": "Carries Highway 7 (Wikipedia infobox).",
+      "source_urls": [
+        "https://en.wikipedia.org/wiki/Pitt_River_Bridge"
+      ]
+    }
+  ]
+}

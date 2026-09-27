@@ -1,0 +1,58 @@
+{
+  "sources": {
+    "team_assumption": {
+      "title": "Team decision on which resources apply to each hazard",
+      "url": null
+    }
+  },
+  "hazards": [
+    {
+      "id": "storm",
+      "label": "Wind and rain storm",
+      "resources": [
+        "water",
+        "floor_space",
+        "cots",
+        "blankets",
+        "charging"
+      ],
+      "source": "team_assumption"
+    },
+    {
+      "id": "heat_smoke",
+      "label": "Heat and wildfire smoke",
+      "resources": [
+        "water",
+        "n95",
+        "cooled_floor_space",
+        "cots"
+      ],
+      "source": "team_assumption",
+      "note": "Cots apply to lodging counts only, so they appear only when lodging > 0."
+    },
+    {
+      "id": "lightning",
+      "label": "Lightning storm",
+      "resources": [
+        "water",
+        "floor_space",
+        "cots",
+        "blankets",
+        "charging"
+      ],
+      "source": "team_assumption"
+    },
+    {
+      "id": "snow_ice",
+      "label": "Snow and ice",
+      "resources": [
+        "water",
+        "floor_space",
+        "cots",
+        "blankets",
+        "charging"
+      ],
+      "source": "team_assumption"
+    }
+  ]
+}

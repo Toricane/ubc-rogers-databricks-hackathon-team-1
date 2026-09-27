@@ -1,0 +1,105 @@
+{
+  "sources": {
+    "canada_kits": {
+      "title": "Canada.ca, Emergency kits (date modified 2025-09-12)",
+      "url": "https://www.canada.ca/en/services/policing/emergencies/preparedness/get-prepared/emergency-kits.html",
+      "fetched": "2026-09-26"
+    },
+    "sphere_2018": {
+      "title": "The Sphere Handbook 2018, Shelter and settlement standard 3: Living space",
+      "url": "https://spherestandards.org/wp-content/uploads/Sphere-Handbook-2018-EN.pdf",
+      "fetched": null,
+      "todo": "PDF returned HTTP 403 to automated fetch; wording confirmed via search index only. Confirm the quote and page number by hand."
+    },
+    "bc_news_masks": {
+      "title": "BC Gov News 2026HLTH0071-000954: free N95 masks from the Canadian Red Cross in the Interior Health region",
+      "url": "https://news.gov.bc.ca/releases/2026HLTH0071-000954",
+      "fetched": "2026-09-26"
+    },
+    "team_assumption": {
+      "title": "Team assumption",
+      "url": null
+    }
+  },
+  "duration_h": {
+    "value": 72,
+    "source": "canada_kits",
+    "quote": "Be prepared to be self-sufficient for at least 72 hours."
+  },
+  "resources": [
+    {
+      "id": "water",
+      "label": "Drinking water",
+      "unit": "L",
+      "rate": 4,
+      "per_day": true,
+      "applies_to": "all",
+      "source": "canada_kits",
+      "source_url": "https://www.canada.ca/en/services/policing/emergencies/preparedness/get-prepared/emergency-kits.html",
+      "quote": "Water is important for drinking, cooking and sanitation. You will need about four litres per person, per day."
+    },
+    {
+      "id": "floor_space",
+      "label": "Floor space",
+      "unit": "m²",
+      "rate": 4.5,
+      "per_day": false,
+      "applies_to": "all",
+      "source": "sphere_2018",
+      "source_url": "https://spherestandards.org/wp-content/uploads/Sphere-Handbook-2018-EN.pdf",
+      "quote": "4.5–5.5 square metres of living space per person in cold climates or urban settings where internal cooking space and bathing and/or sanitation facilities are included.",
+      "note": "Lower end of the Sphere range for cold or urban settings."
+    },
+    {
+      "id": "cooled_floor_space",
+      "label": "Cooled floor space",
+      "unit": "m²",
+      "rate": 4.5,
+      "per_day": false,
+      "applies_to": "all",
+      "source": "sphere_2018",
+      "source_url": "https://spherestandards.org/wp-content/uploads/Sphere-Handbook-2018-EN.pdf",
+      "note": "Same Sphere floor-space rate applied to a cooled room during heat (team assumption that the rate carries over)."
+    },
+    {
+      "id": "cots",
+      "label": "Cots",
+      "unit": "cots",
+      "rate": 1,
+      "per_day": false,
+      "applies_to": "lodging",
+      "source": "team_assumption"
+    },
+    {
+      "id": "blankets",
+      "label": "Blankets",
+      "unit": "blankets",
+      "rate": 1,
+      "per_day": false,
+      "applies_to": "lodging",
+      "source": "team_assumption"
+    },
+    {
+      "id": "n95",
+      "label": "N95 masks",
+      "unit": "masks",
+      "rate": 1,
+      "per_day": false,
+      "applies_to": "all",
+      "source": "team_assumption",
+      "note": "BC's 2026 free Red Cross masks were in the Interior Health region, not Vancouver",
+      "note_source": "bc_news_masks",
+      "note_source_url": "https://news.gov.bc.ca/releases/2026HLTH0071-000954"
+    },
+    {
+      "id": "charging",
+      "label": "Phone charging points",
+      "unit": "points",
+      "rate": 0.1,
+      "per_day": false,
+      "applies_to": "all",
+      "source": "team_assumption",
+      "note": "1 point per 10 people"
+    }
+  ]
+}
