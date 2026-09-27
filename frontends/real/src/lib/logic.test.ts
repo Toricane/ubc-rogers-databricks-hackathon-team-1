@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Crossing, Hub, Origin, Rate } from "../data/types";
-import { alertText, assignHubs, canGetHome, ceilSafe, situation, stranded, supplies } from "./logic";
+import { alertText, assignHubs, busesNeeded, busPlan, canGetHome, ceilSafe, cycleHours, pickRoute, situation, stranded, supplies, totalBuses } from "./logic";
+import { fixtureRoutes } from "./__fixtures__/transit";
 import { stepSlot } from "./time";
 
 const O = (name: string, group: Origin["group"], crossings: string[] = []): Origin => ({
@@ -151,5 +152,55 @@ describe("time", () => {
   it("steps across midnight on minutes-of-day", () => {
     expect(stepSlot("2026-08-22", "23:30", 1)).toEqual({ date: "2026-08-23", slot: "00:00" });
     expect(stepSlot("2026-03-01", "00:00", -1)).toEqual({ date: "2026-02-28", slot: "23:30" });
+  });
+});
+
+describe("buses home", () => {
+  const dispatch = [
+    { origin: "North Vancouver", present: 400, departing_30m: 150 },
+    { origin: "Richmond", present: 300, departing_30m: 90 },
+    { origin: "Burnaby", present: 200, departing_30m: 80 },
+  ];
+
+  it("picks a bus over rail, then the most scheduled trips", () => {
+    expect(pickRoute(fixtureRoutes, "North Vancouver", "lions_gate")!.route_short_name).toBe("B");
+    expect(pickRoute(fixtureRoutes, "North Vancouver", "ironworkers")).toBeNull();
+  });
+
+  it("sizes buses from riders per hour, capacity and round trip", () => {
+    expect(cycleHours(30, 5)).toBeCloseTo(70 / 60);
+    // 300 riders/h ÷ 60 per bus × 70/60 h = 5.83 → 6
+    expect(busesNeeded(300, 60, 30, 5)).toBe(6);
+    expect(busesNeeded(0, 60, 30, 5)).toBe(0);
+    expect(busesNeeded(120, 60, 25, 5)).toBe(ceilSafe(2 * (60 / 60)));
+  });
+
+  it("leaves Burnaby out (no crossing) and marks the usual way as normal", () => {
+    const rows = busPlan(origins, dispatch, fixtureRoutes, new Set(), 60, 5);
+    expect(rows.map((r) => r.origin.name).sort()).toEqual(["North Vancouver", "Richmond"]);
+    expect(rows.every((r) => r.status === "normal" && r.buses === null)).toBe(true);
+    expect(totalBuses(rows)).toBe(0);
+  });
+
+  it("diverts North Vancouver onto a Lions Gate bus when SeaBus closes", () => {
+    const rows = busPlan(origins, dispatch, fixtureRoutes, new Set(["seabus"]), 60, 5);
+    const nv = rows.find((r) => r.origin.name === "North Vancouver")!;
+    expect(nv).toMatchObject({ status: "diverted", via: "lions_gate", ridersPerHour: 300 });
+    expect(nv.route!.route_short_name).toBe("B");
+    expect(nv.buses).toBe(busesNeeded(300, 60, 30, 5));
+    expect(rows[0].origin.name).toBe("North Vancouver"); // diverted rows first
+  });
+
+  it("reports no number when no scheduled route uses the open crossing", () => {
+    const rows = busPlan(origins, dispatch, fixtureRoutes, new Set(["seabus", "lions_gate"]), 60, 5);
+    const nv = rows.find((r) => r.origin.name === "North Vancouver")!;
+    expect(nv).toMatchObject({ status: "diverted", via: "ironworkers", route: null, buses: null });
+  });
+
+  it("marks all-closed as stranded, and keeps working without a dispatch snapshot", () => {
+    const all = new Set(["seabus", "lions_gate", "ironworkers"]);
+    expect(busPlan(origins, dispatch, fixtureRoutes, all, 60, 5).find((r) => r.origin.name === "North Vancouver")!.status).toBe("stranded");
+    const noData = busPlan(origins, null, fixtureRoutes, new Set(["seabus"]), 60, 5);
+    expect(noData.find((r) => r.origin.name === "North Vancouver")).toMatchObject({ status: "diverted", ridersPerHour: null, buses: null });
   });
 });
