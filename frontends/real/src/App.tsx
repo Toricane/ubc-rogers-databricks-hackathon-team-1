@@ -261,7 +261,7 @@ export default function App() {
     if (!model) return null;
     switch (id) {
       case 1: return model.sit.total;
-      case 2: return model.busesNeeded > 0 ? model.busesNeeded : model.closed.size;
+      case 2: return model.sit.byGroup.vancouver + model.st.metroHome;
       case 3: return model.st.total;
       case 4: return model.plan.active.length;
       case 5: return model.alert ? model.alert.split("\n").length : 0;
