@@ -1,5 +1,5 @@
 // Loads the reviewed external reference files from public/data/external/.
-import type { CrossingStatus, Hazard, HazardId, Incident, Rate, Reference } from "./types";
+import type { CrossingStatus, Hazard, HazardId, Incident, Rate, Reference, Transport, TransportParam } from "./types";
 import { fetchMajorEvents, matchCrossings } from "../lib/drivebc";
 
 const BASE = `${import.meta.env.BASE_URL}data/external/`;
@@ -34,6 +34,25 @@ export async function loadRates(hazard: HazardId): Promise<Rate[]> {
   const [{ resources }, hazards] = await Promise.all([loadRatesFile(), loadHazards()]);
   const ids = hazards.find((h) => h.id === hazard)?.resources ?? [];
   return ids.map((id) => resources.find((r) => r.id === id)).filter((r): r is Rate => !!r);
+}
+
+let transportP: Promise<Transport> | null = null;
+/** Bus capacity and layover for tab 2. Each value names its source (or "team_assumption"). */
+export function loadTransport(): Promise<Transport> {
+  transportP ??= getJson<any>("transport.json").catch(() => {
+    throw new Error("Bus settings missing: public/data/external/transport.json could not be read.");
+  }).then((t) => {
+    const withTitle = (p: TransportParam): TransportParam => ({
+      ...p,
+      source_title: p.source_title ?? t.sources?.[p.source ?? ""]?.title ?? p.source,
+      source_url: p.source_url ?? t.sources?.[p.source ?? ""]?.url ?? undefined,
+    });
+    if (typeof t?.bus_capacity?.value !== "number" || typeof t?.layover_min?.value !== "number")
+      throw new Error("transport.json: bus_capacity.value and layover_min.value are required");
+    return { ...t, bus_capacity: withTitle(t.bus_capacity), layover_min: withTitle(t.layover_min) };
+  });
+  transportP.catch(() => (transportP = null));
+  return transportP;
 }
 
 let incP: Promise<Incident[]> | null = null;

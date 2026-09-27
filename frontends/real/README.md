@@ -5,14 +5,14 @@ Built by team **Five Bars 3G** for the Rogers × Databricks × UBC smarter-commu
 A reactive tool for a City of Vancouver Emergency Management duty officer during an extreme-weather incident at the Waterfront Station area. It answers five questions, one per tab:
 
 1. **Situation.** How many people are in the area, and can they get home?
-2. **Crossings.** Which ways home are open?
+2. **Getting home.** Which ways home are open, and which buses get people there?
 3. **Where to send people.** Where do stranded people go?
 4. **Supplies.** What do I deliver to each hub?
 5. **Alert.** What do I tell people in the area?
 
 The tool treats **Wednesday, July 22, 2026** (a heat and wildfire-smoke day) as "today". It replays that day of the synthetic data minute by minute, so the pitch feels like a live incident. The data is used exactly as exported; only the framing is "day of". The officer picks the type of weather; the day stays fixed. The app opens with a short animated splash that any click or key skips; with reduced motion it shows a still logo.
 
-It is not a planning or analysis tool. Trends, forecasts and routing are out of scope; see `NEXT_STEPS.md`.
+It is not a planning or analysis tool. Trends, forecasts and turn-by-turn routing are out of scope; see `NEXT_STEPS.md`. Tab 2 draws scheduled TransLink routes (GTFS static, not real-time) but gives no directions.
 
 ## Run it
 
@@ -38,7 +38,7 @@ Useful URLs:
 
 Keyboard: `←` and `→` step the time by 30 minutes. Keys `1` to `5` switch tabs. `Esc` closes the (i) drawer.
 
-UI check: with a server running, `node scripts/ui-check.mjs http://127.0.0.1:8000/ <screenshot-folder>` clicks through all five tabs at 1280×720 with `?demo=1`. It checks that the totals on screen equal the gold totals in `manifest.json`, skips the splash, toggles crossings, switches the weather, steps the time past midnight into Jul 23, and checks that ← stops at Jul 22 00:00. It uses the locally installed Chrome or Edge through `playwright-core`.
+UI check: with a server running, `node scripts/ui-check.mjs http://127.0.0.1:8000/ <screenshot-folder>` clicks through all five tabs at 1280×720 with `?demo=1`. It checks that the totals on screen equal the gold totals in `manifest.json`, skips the splash, toggles crossings, switches the weather, opens Jul 22 17:00 and checks that closing SeaBus sizes buses on a North Vancouver route, steps the time past midnight into Jul 23, and checks that ← stops at Jul 22 00:00. It uses the locally installed Chrome or Edge through `playwright-core`.
 
 ## Data
 
@@ -48,6 +48,7 @@ The numbers come from exported snapshots of `workspace.rogers_waterfront_minute.
 - **Clock:** kept as recorded, assumed to be Vancouver local time (not confirmed).
 - **Counts:** actual values, with no suppression. They're sessions, not verified people. "Stranded" is the tool's estimate.
 - **Dates exported:** 2025-12-17, 2025-12-18, 2026-07-22, 2026-07-23, 2026-08-22, 2026-08-23.
+- **Tab 2 (Getting home)** also reads `public/data/internal/dispatch/`: departures per home area and slot (`{date}.json`, listed in `dispatch/dates.json`) and scheduled TransLink routes (`transit.json`), exported from the dispatch gold tables. Bus capacity and layover come from `public/data/external/transport.json`. A date without a dispatch snapshot shows "No dispatch snapshot for …" and no bus counts; the routes and crossing toggles still work.
 
 ## Hosting (Databricks Apps)
 
@@ -77,10 +78,10 @@ src/
   data/
     types.ts              CellSafeData interface and shapes
     adapter.ts            StaticAdapter (default), MockAdapter, DatabricksAdapter (stub)
-    external.ts           loads public/data/external/*.json
+    external.ts           loads public/data/external/*.json (incl. transport.json)
     mock.ts               mock presence (made-up numbers, real 36 labels)
   lib/
-    logic.ts              situation, canGetHome, assignHubs, supplies, alertText
+    logic.ts              situation, canGetHome, assignHubs, supplies, alertText, busPlan
     logic.test.ts         Vitest
     drivebc.ts            Open511 client (adapted from teammate's map)
     geo.ts, time.ts       haversine, walking time; "HH:MM" arithmetic
@@ -108,6 +109,12 @@ server.mjs, app.yaml      static server and Databricks Apps config
   - Needed = people × rate × (duration ÷ 24 for per-day items), rounded up. To deliver = needed − on hand.
   - Cots and blankets count only people staying overnight.
   - Only the resources for the incident's hazard are shown.
+- **Buses home (tab 2).**
+  - Only Metro home areas with a crossing list are listed. Their first crossing is the usual way home.
+  - Usual crossing open: normal. Usual crossing closed but another open: diverted onto that crossing. All closed: stranded (tab 3 sends them to a hub).
+  - A diverted area uses the scheduled TransLink route toward it over the open crossing: buses before rail, then most scheduled trips per hour in the PM peak. With no such route, the tab says so and gives no number.
+  - Map: each scheduled route is drawn along its GTFS shape from Waterfront toward the home area, with an arrow near its end and one chip per home area at the route end ("240 → North Vancouver"). The route to add buses on is thick red with a white casing and a "240 · 6 buses → North Vancouver" chip; routes over a closed crossing are dashed grey. The map fits Waterfront, the routes and the home-area dots, so distant crossings may be off-screen (they stay in the table).
+  - Leaving per hour = sessions that end in the next 30 minutes × 2. Buses = ceil(leaving per hour ÷ capacity × round trip), round trip = (2 × scheduled one-way time + 2 × layover) ÷ 60 h.
 - **Crossings.**
   - Past incidents use the incident record (no closures are sourced yet), and the officer sets the rest.
   - A Custom incident dated today uses live DriveBC major events: an event within 1 km that matches the crossing's highway, or any event within 1 km for crossings without a highway.
@@ -126,6 +133,10 @@ server.mjs, app.yaml      static server and Databricks Apps config
 | Jul 22, 2026 is shown as "today"; time runs from Jul 22 00:00 to Jul 23 23:30 | `App.tsx` (`SCENARIO_DATE`) |
 | Resource rates and max people per hub are scenario assumptions, not measurements | tabs 3–4, (i) drawer |
 | Water duration 72 h for every incident (Canada.ca default) | `incidents.json` |
+| First crossing in an origin's list is its usual way home | `origins.json` order, tab 2 |
+| People leaving per hour = sessions ending in the next 30 min × 2 | tab 2 |
+| Bus capacity and layover per round trip | `transport.json` (each value names its source or `team_assumption`) |
+| Scheduled GTFS times and frequencies stand in for the incident day; not real-time | `transit.json` |
 
 ### Open TODOs in the data
 
@@ -149,6 +160,8 @@ server.mjs, app.yaml      static server and Databricks Apps config
 | Dec 17 storm | [BC Hydro](https://www.bchydro.com/news/press_centre/news_releases/2025/strong-wind-and-heavy-rain-leave-about-120-000-bc-hydro-customer.html) |
 | Jul 22 heat and smoke | [Anywhere Vancouver](https://anywherevancouver.com/heat-air-quality-warnings-metro-vancouver-july-22-2026/) |
 | Aug 22 lightning storm | [CP24](https://www.cp24.com/news/canada/2026/08/23/lightning-thunderstorm-impact-operations-at-vancouver-airport/) |
+| TransLink routes, stops, scheduled times and shapes | TransLink GTFS static feed; the feed URL and version are in `public/data/internal/dispatch/transit.json` |
+| Bus capacity, layover | Cited in `public/data/external/transport.json` |
 | Map tiles | Esri World Street Map, full colour, same approach as the teammate's map |
 
 ## Privacy

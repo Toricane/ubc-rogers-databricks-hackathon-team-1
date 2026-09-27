@@ -149,3 +149,68 @@
   box-shadow: none;
 }
 .leaflet-tooltip.line-label::before { display: none; }
+
+/* Tab 2: scheduled routes home and home-area dots */
+.route-line { stroke: var(--g-metro); stroke-opacity: .45; stroke-linecap: round; stroke-linejoin: round; fill: none; }
+.route-line.diverted { stroke: var(--brand); stroke-opacity: .95; }
+.route-line.closed { stroke: var(--unused); stroke-opacity: .7; stroke-dasharray: 4 6; }
+.origin-dot { fill: var(--g-metro); stroke: var(--surface); stroke-width: 2px; fill-opacity: .95; }
+.origin-dot.diverted { fill: var(--brand); }
+.origin-dot.stranded { fill: var(--critical); }
+.legend-route { width: 22px; height: 3px; background: var(--g-metro); opacity: .6; border-radius: 2px; }
+.legend-route.diverted { height: 5px; background: var(--brand); opacity: 1; }
+.legend-route.closed { background: repeating-linear-gradient(90deg, var(--unused) 0 4px, transparent 4px 8px); opacity: 1; }
+.legend-origin { width: 12px; height: 12px; border-radius: 50%; background: var(--g-metro); border: 2px solid var(--surface); box-shadow: 0 0 0 1px var(--border); }
+.leaflet-tooltip.route-label {
+  background: var(--brand);
+  color: var(--on-brand);
+  border: 2px solid var(--surface);
+  font-family: var(--font-num);
+  font-size: var(--fs-small);
+  font-weight: 700;
+  padding: 1px var(--s2);
+  box-shadow: var(--shadow-card);
+  white-space: nowrap;
+}
+.leaflet-tooltip.route-label::before { display: none; }
+.route-casing { stroke: var(--surface); stroke-opacity: .95; stroke-linecap: round; stroke-linejoin: round; fill: none; }
+.route-line.normal { stroke-opacity: .8; }
+.route-arrow.normal .arrow { border-bottom-color: var(--g-metro); }
+.route-arrow.closed .arrow { border-bottom-color: var(--unused); }
+.route-arrow.diverted .arrow { border-bottom-color: var(--brand); }
+.route-chip-icon { overflow: visible; }
+.route-chip {
+  position: absolute;
+  left: 8px;
+  top: -10px;
+  white-space: nowrap;
+  font-family: var(--font-num);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: var(--r-control);
+  background: var(--surface);
+  color: var(--g-metro);
+  border: 1px solid var(--g-metro);
+  box-shadow: var(--shadow-card);
+}
+.route-chip.closed { color: var(--muted); border-color: var(--unused); text-decoration: line-through; }
+.route-chip.diverted {
+  background: var(--brand);
+  color: var(--on-brand);
+  border: 2px solid var(--surface);
+  font-size: var(--fs-small);
+  font-weight: 700;
+  padding: 2px var(--s2);
+}
+.legend-chip { font-family: var(--font-num); font-size: 10px; color: var(--g-metro); border: 1px solid var(--g-metro); border-radius: var(--r-control); padding: 0 4px; background: var(--surface); }
+.leaflet-tooltip.origin-label {
+  background: transparent; border: none; box-shadow: none; padding: 0;
+  font-size: 11px; font-weight: 700; color: var(--text);
+  text-shadow: 0 0 3px var(--surface), 0 0 3px var(--surface), 0 0 2px var(--surface);
+}
+.leaflet-tooltip.origin-label::before { display: none; }
+.route-chip.left { left: auto; right: 8px; }
+.route-chip s { color: var(--unused); }
+.route-chip.closed { text-decoration: none; }
+.route-chip.up { top: -34px; }

@@ -18,14 +18,15 @@ Notebook output is not a substitute. Confirmed facts belong in both files, not o
 ## Working directory
 
 - Repo root is this directory, `ubc-rogers-databricks-hackathon-team-1`.
-- `notebooks/` holds exploratory Databricks notebooks (`.py` files with `# Databricks notebook source`). The same folder is the Git folder in the Databricks workspace. Current notebooks: `01_timestamp_timezone.py`, `02_grain_and_identity.py`, `03_waterfront_activity.py`, `04_generation_report.py`.
-- `frontends/` holds separate prototypes. Each tool gets its own folder so several people can keep different frontends in this repo. `frontends/waterfront-presence-sketch/` is one test player for Waterfront active-visit counts, not the team's finished tool. Counts and centroids live in `frontends/waterfront-presence-sketch/public/data/`. Run it with `npm install` and `npm run dev` inside that folder.
+- `notebooks/` holds exploratory Databricks notebooks (`.py` files with `# Databricks notebook source`). The same folder is the Git folder in the Databricks workspace. Current notebooks: `01_timestamp_timezone.py`, `02_grain_and_identity.py`, `03_waterfront_activity.py`, `04_generation_report.py`, `05_dispatch.py` (writes the `gold_route_*` dispatch tables; imports the plain module `dispatch_transit.py` next to it).
+- `frontends/` holds separate prototypes. Each tool gets its own folder so several people can keep different frontends in this repo. `frontends/waterfront-presence-sketch/` is one test player for Waterfront active-visit counts, not the team's finished tool. Counts and centroids live in `frontends/waterfront-presence-sketch/public/data/`. Run it with `npm install` and `npm run dev` inside that folder. `frontends/real/` is Cell-Safe (team Five Bars 3G), the duty-officer tool; its data comes from `scripts/export_databricks.py` (presence snapshots plus the dispatch tables).
 - Do not put warehouse credentials, profiles, or `.env` files anywhere in the tree.
 
 ## Databricks
 
 - Host: `dbc-d1555967-1ea3.cloud.databricks.com`
 - Table: `workspace.default.synthetic_data` (managed Delta, 21,496,090 rows)
+- Dispatch tables (built by `notebooks/05_dispatch.py`): `workspace.rogers_waterfront_minute.gold_route_events` (sourced incidents, currently Jul 22 2026 only), `gold_route_demand` (present and departing sessions per origin and 30-minute slot), `gold_route_transit` (TransLink static GTFS services from Waterfront toward each Metro home area). The GTFS zip is read from `/Volumes/workspace/rogers_waterfront_minute/reference/translink_gtfs.zip`. Do not add fabricated incidents to `gold_route_events`.
 - Warehouse: Serverless Starter Warehouse, id `20565b42b4da4903`. Its session timezone is `Etc/UTC`.
 - Local CLI profile for this workspace is `hackathon` (`databricks -p hackathon`). Do not commit `%USERPROFILE%\.databrickscfg`.
 - Notebooks in `notebooks/` run in this workspace against that table. Do not point them at another catalog.

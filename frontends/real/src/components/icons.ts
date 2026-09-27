@@ -32,11 +32,21 @@ export function hubIcon(count: number | null) {
   });
 }
 
-export function arrowIcon(bearing: number) {
+export function arrowIcon(bearing: number, extraClass = "") {
   return L.divIcon({
-    className: "arrow-icon",
+    className: `arrow-icon ${extraClass}`.trim(),
     iconSize: [14, 14],
     iconAnchor: [7, 7],
     html: `<span class="arrow" style="transform: rotate(${bearing.toFixed(0)}deg)"></span>`,
+  });
+}
+
+/** Label chip anchored at a route's end (the home-area side). `html` must already be escaped. */
+export function routeChipIcon(html: string, cls: "diverted" | "closed" | "normal", left = false, up = false) {
+  return L.divIcon({
+    className: "route-chip-icon",
+    iconSize: [0, 0],
+    iconAnchor: [0, 0],
+    html: `<span class="route-chip ${cls}${left ? " left" : ""}${up ? " up" : ""}">${html}</span>`,
   });
 }

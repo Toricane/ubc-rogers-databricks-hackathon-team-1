@@ -80,6 +80,57 @@ export interface CrossingStatus {
   detail?: string; // e.g. DriveBC headline
 }
 
+// ---------- dispatch (tab 2: getting home) ----------
+
+/** One home area at one slot, from public/data/internal/dispatch/{date}.json. */
+export interface DispatchRow {
+  origin: string;
+  present: number | null;
+  departing_30m: number | null; // sessions that end in [slot, slot + 30 min)
+}
+
+export interface TransitStop {
+  name: string;
+  lat: number;
+  lng: number;
+}
+
+/** A scheduled TransLink route from the Waterfront area toward a home area (GTFS static, not real-time). */
+export interface TransitRoute {
+  origin: string;
+  crossing_id: string | null;
+  route_short_name: string;
+  route_long_name: string;
+  mode: "bus" | "rail" | "ferry";
+  board: TransitStop;
+  alight: TransitStop;
+  one_way_min: number;
+  trips_per_hour_pm: number | null;
+  shape: [number, number][];
+}
+
+export interface Transit {
+  feed: { version: string | null; start: string | null; end: string | null; url: string | null };
+  routes: TransitRoute[];
+}
+
+/** A sourced (or labelled team-assumption) parameter from public/data/external/transport.json. */
+export interface TransportParam {
+  value: number;
+  unit?: string;
+  source?: string;
+  source_title?: string;
+  source_url?: string;
+  quote?: string;
+  note?: string;
+}
+
+export interface Transport {
+  bus_capacity: TransportParam;
+  layover_min: TransportParam;
+  gtfs?: { url?: string | null; title?: string | null; version?: string | null; fetched?: string | null };
+}
+
 export interface CellSafeData {
   readonly kind: "mock" | "static" | "databricks";
   isMock(): boolean;
@@ -90,4 +141,7 @@ export interface CellSafeData {
   getHazards(): Promise<Hazard[]>; // EXTERNAL
   getIncidents(): Promise<Incident[]>; // EXTERNAL
   getCrossingStatus(mode: "live" | "incident", incidentId?: string): Promise<CrossingStatus[]>; // EXTERNAL
+  getDispatch(date: string, slot: string): Promise<DispatchRow[]>; // INTERNAL (gold_route_demand export)
+  getTransit(): Promise<Transit>; // INTERNAL (gold_route_transit export, GTFS-derived)
+  getTransport(): Promise<Transport>; // EXTERNAL
 }
