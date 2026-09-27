@@ -1,5 +1,5 @@
 // Pure decision logic. No React, no fetch.
-import type { Crossing, Group, Hub, Origin, Place, PresenceRow, Rate } from "../data/types";
+import type { Crossing, DispatchRow, Group, Hub, Origin, Place, PresenceRow, Rate, TransitRoute } from "../data/types";
 import { haversineKm, walkMinutes } from "./geo";
 
 // ---------- situation ----------
@@ -219,4 +219,97 @@ export function alertText(
     lines.push(`Visiting from outside Metro Vancouver: go to ${hubsText(lodgeHubs)} for overnight shelter.`);
 
   return lines.join("\n");
+}
+
+// ---------- buses home (tab 2) ----------
+
+export type BusStatus = "normal" | "diverted" | "stranded";
+
+export interface BusRow {
+  origin: Origin;
+  status: BusStatus;
+  preferred: string; // first crossing in the origin's list
+  via: string | null; // open crossing used when diverted
+  present: number | null;
+  departing30: number | null;
+  ridersPerHour: number | null; // departing30 × 2, diverted only
+  route: TransitRoute | null; // chosen route when diverted
+  routes: TransitRoute[]; // every scheduled route toward this origin
+  buses: number | null; // null when diverted with no matching route or no departures
+  cycleH: number | null;
+}
+
+/** Route toward `origin` that crosses `crossingId`: buses first, then the most scheduled trips per hour. */
+export function pickRoute(routes: TransitRoute[], origin: string, crossingId: string): TransitRoute | null {
+  const rank = (r: TransitRoute) => [r.mode === "bus" ? 1 : 0, r.trips_per_hour_pm ?? -1];
+  const c = routes.filter((r) => r.origin === origin && r.crossing_id === crossingId);
+  c.sort((a, b) => {
+    const [ma, ta] = rank(a), [mb, tb] = rank(b);
+    return mb - ma || tb - ta;
+  });
+  return c[0] ?? null;
+}
+
+/** Round trip in hours: (2 × one-way + 2 × layover) ÷ 60. */
+export function cycleHours(oneWayMin: number, layoverMin: number): number {
+  return (2 * oneWayMin + 2 * layoverMin) / 60;
+}
+
+/** Buses to run continuously so riders/hour fit: ceil(riders ÷ capacity × cycle hours). */
+export function busesNeeded(ridersPerHour: number, capacity: number, oneWayMin: number, layoverMin: number): number {
+  if (ridersPerHour <= 0) return 0;
+  return ceilSafe((ridersPerHour / Math.max(1, capacity)) * cycleHours(oneWayMin, layoverMin));
+}
+
+/**
+ * One row per Metro home area that needs a crossing.
+ * normal: its first crossing is open. diverted: first crossing closed, another open (riders need buses that way).
+ * stranded: all closed (the hub logic handles them). `dispatch` may be null when no snapshot exists.
+ */
+export function busPlan(
+  origins: Origin[],
+  dispatch: DispatchRow[] | null,
+  routes: TransitRoute[],
+  closed: ReadonlySet<string>,
+  capacity: number,
+  layoverMin: number,
+): BusRow[] {
+  const byOrigin = new Map((dispatch ?? []).map((d) => [d.origin, d]));
+  const rows: BusRow[] = [];
+  for (const o of origins) {
+    if (o.group !== "metro" || o.crossings.length === 0) continue;
+    const d = byOrigin.get(o.name);
+    const preferred = o.crossings[0];
+    const mine = routes.filter((r) => r.origin === o.name);
+    const base = {
+      origin: o, preferred, present: d?.present ?? null, departing30: d?.departing_30m ?? null,
+      routes: mine, ridersPerHour: null, route: null, buses: null, cycleH: null,
+    };
+    if (!closed.has(preferred)) {
+      rows.push({ ...base, status: "normal", via: preferred });
+      continue;
+    }
+    const via = openCrossingFor(o, closed);
+    if (!via) {
+      rows.push({ ...base, status: "stranded", via: null });
+      continue;
+    }
+    const route = pickRoute(routes, o.name, via);
+    const riders = d?.departing_30m == null ? null : d.departing_30m * 2;
+    rows.push({
+      ...base,
+      status: "diverted",
+      via,
+      ridersPerHour: riders,
+      route,
+      cycleH: route ? cycleHours(route.one_way_min, layoverMin) : null,
+      buses: route && riders !== null ? busesNeeded(riders, capacity, route.one_way_min, layoverMin) : null,
+    });
+  }
+  const order: Record<BusStatus, number> = { diverted: 0, stranded: 1, normal: 2 };
+  return rows.sort((a, b) => order[a.status] - order[b.status] || (b.present ?? 0) - (a.present ?? 0));
+}
+
+export function totalBuses(rows: BusRow[]): number {
+  return rows.reduce((s, r) => s + (r.buses ?? 0), 0);
 }

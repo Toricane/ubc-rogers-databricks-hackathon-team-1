@@ -70,6 +70,7 @@ export function InfoDrawer({
             <li>Hubs are filled nearest first, up to the "max people per hub" setting. Waiting people are placed before lodging.</li>
             <li>Supplies: people × rate, × days for water, rounded up, minus what's on hand.</li>
             <li>The officer's crossing settings always override DriveBC.</li>
+            <li>Buses home (tab 2): when a home area's usual crossing is closed but another is open, its departures move to the scheduled TransLink route over the open crossing. Buses = people leaving per hour ÷ bus capacity × round trip.</li>
           </ul>
         </section>
 
@@ -94,6 +95,23 @@ export function InfoDrawer({
                 <span className="muted small block">{s.what}</span>
               </li>
             ))}
+            {m?.transit?.feed.url && (
+              <li>
+                <a href={m.transit.feed.url} target="_blank" rel="noopener noreferrer">TransLink GTFS static schedule</a>
+                <span className="muted small block">
+                  Route numbers, stops, scheduled travel times and shapes for tab 2
+                  {m.transit.feed.version ? ` (feed ${m.transit.feed.version})` : ""}. Not real-time.
+                </span>
+              </li>
+            )}
+            {m?.transport?.bus_capacity.source_url && (
+              <li>
+                <a href={m.transport.bus_capacity.source_url} target="_blank" rel="noopener noreferrer">
+                  {m.transport.bus_capacity.source_title ?? "Bus capacity source"}
+                </a>
+                <span className="muted small block">Bus capacity used for tab 2</span>
+              </li>
+            )}
           </ul>
         </section>
 

@@ -1,8 +1,8 @@
 // Everything the tabs need, derived from the current incident, time, and crossing toggles.
-import type { Crossing, CrossingStatus, Hazard, Incident, Rate, Reference, StatusSource } from "./data/types";
+import type { Crossing, CrossingStatus, DispatchRow, Hazard, Incident, Rate, Reference, StatusSource, Transit, Transport } from "./data/types";
 import {
-  affected, alertText, assignHubs, reliance, situation, stranded, supplies, supplyTotals,
-  type HubPlan, type Situation, type Stranded, type SupplyRow,
+  affected, alertText, assignHubs, busPlan, reliance, situation, stranded, supplies, supplyTotals, totalBuses,
+  type BusRow, type HubPlan, type Situation, type Stranded, type SupplyRow,
 } from "./lib/logic";
 import type { PresenceRow } from "./data/types";
 
@@ -31,6 +31,12 @@ export interface Model {
   supplyRows: SupplyRow[][]; // aligned with plan.active
   totals: ReturnType<typeof supplyTotals>;
   alert: string;
+  // Tab 2 buses home. `buses` is null until routes and transport settings load.
+  transit: Transit | null;
+  transport: Transport | null;
+  dispatchError: string | null;
+  buses: BusRow[] | null;
+  busesNeeded: number;
 }
 
 export function buildModel(args: {
@@ -45,6 +51,10 @@ export function buildModel(args: {
   maxPerHub: number;
   rates: Rate[];
   onHand: Record<string, Record<string, number | undefined>>;
+  dispatch?: DispatchRow[] | null;
+  dispatchError?: string | null;
+  transit?: Transit | null;
+  transport?: Transport | null;
 }): Model {
   const { ref, rows, base, overrides, maxPerHub, rates, onHand, incident } = args;
   const sit = situation(rows, ref.origins);
@@ -61,6 +71,11 @@ export function buildModel(args: {
   const st = stranded(sit.byOrigin, closed);
   const plan = assignHubs(ref.site, ref.hubs, st.waiting, st.lodging, maxPerHub);
   const supplyRows = plan.active.map((a) => supplies(a, rates, incident.duration_h, onHand[a.hub.id]));
+  const transit = args.transit ?? null;
+  const transport = args.transport ?? null;
+  const buses = transit && transport
+    ? busPlan(ref.origins, args.dispatch ?? null, transit.routes, closed, transport.bus_capacity.value, transport.layover_min.value)
+    : null;
   return {
     ...args,
     sit,
@@ -72,6 +87,11 @@ export function buildModel(args: {
     supplyRows,
     totals: supplyTotals(supplyRows),
     alert: alertText(sit.byOrigin, ref.crossings, closed, plan),
+    transit,
+    transport,
+    dispatchError: args.dispatchError ?? null,
+    buses,
+    busesNeeded: buses ? totalBuses(buses) : 0,
   };
 }
 

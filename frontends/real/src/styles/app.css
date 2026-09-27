@@ -337,3 +337,9 @@ button {
 .drawer code { font-family: var(--font-num); font-size: 12px; }
 .time-val .small { white-space: nowrap; }
 .time-val { flex-direction: row; gap: var(--s2); align-items: baseline; }
+
+/* Tab 2: buses home */
+.status.divert { color: var(--brand-dark); }
+.row-divert td { background: var(--brand-tint); }
+.bus-table td { font-size: var(--fs-small); }
+.bus-table th { white-space: nowrap; }
