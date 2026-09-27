@@ -56,7 +56,7 @@ export function SituationTab({ m, offline }: { m: Model; offline: boolean }) {
               key={origin.name}
               center={[origin.lat!, origin.lng!]}
               radius={5 + 22 * Math.sqrt(present / max)}
-              pathOptions={{ className: `home-circle g-${origin.group}` }}
+              className={`home-circle g-${origin.group}`}
             >
               {labelled.has(origin.name) ? (
                 <Tooltip permanent direction="center" className="circle-label">{fmt(present)}</Tooltip>

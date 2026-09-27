@@ -1,113 +1,68 @@
-# Plugging in the real presence data
+# Presence data: how it gets into the app
 
-Five Bars 3G reads presence only. There is no baseline, trend, or forecast file.
+Five Bars 3G reads exported Databricks snapshots through `StaticAdapter`. There is no live SQL backend, and the browser never gets Databricks credentials.
 
-## Contract
+## Source tables
 
-Put these files under `frontends/real/public/data/internal/`. Open the app with `?data=static`, which is also the default. If the files are missing, the app falls back to mock numbers and shows the "Mock data" badge.
+| Table | Used for |
+|---|---|
+| `workspace.rogers_waterfront_minute.silver_origin_minute` | Per-origin rows shown in the app |
+| `workspace.rogers_waterfront_minute.gold_activity_minute` | Checks: total and four-bucket counts per slot |
 
-| File | Shape | Definition |
-|---|---|---|
-| `internal/dates.json` | `["2025-11-01", …]` | Dates available |
-| `internal/presence/{date}.json` | `[{ "slot_start": "21:30", "origin": "North Vancouver", "present": 412 }]` | Visits active in the 30-minute slot: `timestamp < slot_end` and `timestamp + dwell_time minutes >= slot_start`. Source is `workspace.default.synthetic_data` where `location_name = 'Waterfront Station'`. Timestamps stay as recorded; never convert them. Cells with fewer than 10 visits become `null`. |
+Both are filtered to `location_name = 'Waterfront Station'` on workspace `dbc-d1555967-1ea3`, using the Serverless Starter Warehouse.
 
-Rules:
+## Metric
 
-- `slot_start` is `"HH:MM"` on the table's own clock, which is UTC. The warehouse session is `Etc/UTC`. Don't shift to Pacific time.
-- Write one row for every slot (48 per day) and every origin (36 labels, spelled exactly as in the table). A cell with 0 to 9 visits is `null`, not missing.
-- `{date}` is the date of `slot_start`. A visit that runs past midnight counts in the next day's file too.
-- A row counts visits, not people. The app says "people" in its labels and explains the difference in the (i) drawer.
+**Simultaneous active attachment sessions**: `start <= t <= start + dwell_time`, at the exact minute `t`.
 
-## PySpark snippet (not run)
+- The app's 30-minute selector samples `minute_timestamp_local` at `:00` and `:30`. "21:30" means the sessions active at 21:30:00. It doesn't mean everyone seen during 21:30–22:00.
+- Counts are sessions, not verified unique people or stranded people.
+- Clock strings are kept as recorded. They're assumed to be Vancouver local time, which isn't confirmed. They're never shifted, and no `Z` is appended.
+- Counts are exported as-is. There's no suppression, so `present` is never `null` in exported files and a zero is a real zero.
+- The source period is November 2025 to August 2026.
 
-Run this in a notebook in the team workspace. It reads the table and writes nothing back to Databricks. It collects about 525,000 small rows to the driver and writes JSON files you can then copy into `public/data/internal/`.
+## Files
 
-```python
-import json, os
-from pyspark.sql import functions as F
+Written by `scripts/export_databricks.py` into `public/data/internal/`. Vite copies them to `dist/data/internal/`, where `server.mjs` serves them.
 
-spark.conf.set("spark.sql.session.timeZone", "Etc/UTC")  # table clock; do not convert
+| File | Shape |
+|---|---|
+| `dates.json` | `["2025-12-17", …]`, listing only dates that were exported and passed the checks |
+| `presence/{date}.json` | `[{ "slot_start": "17:00", "origin": "North Vancouver", "present": 412 }, …]`: 48 slots × 36 origins = 1,728 rows |
+| `manifest.json` | Source tables, metric, clock note, export time, and per-date checks with gold totals |
 
-SLOT = 1800  # seconds
-OUT = "/Workspace/Users/<you>/five-bars-internal"  # any scratch folder you can download from
+## Export
 
-visits = (
-    spark.table("workspace.default.synthetic_data")
-    .where(F.col("location_name") == "Waterfront Station")
-    .select(
-        "origin",
-        F.unix_timestamp("timestamp").alias("t0"),
-        (F.unix_timestamp("timestamp") + F.col("dwell_time") * 60).alias("t1"),
-    )
-)
-
-# Slot s (start) is active when t0 < s + 30 min and t1 >= s.
-# So s runs from floor30(t0) through floor30(t1), inclusive.
-slots = visits.select(
-    "origin",
-    F.explode(
-        F.sequence(
-            (F.floor(F.col("t0") / SLOT) * SLOT),
-            (F.floor(F.col("t1") / SLOT) * SLOT),
-            F.lit(SLOT).cast("bigint"),
-        )
-    ).alias("s"),
-)
-
-counts = slots.groupBy("s", "origin").count()
-
-# Full grid: every slot in the table's span x every origin, so zero cells exist.
-span = spark.table("workspace.default.synthetic_data").where(
-    F.col("location_name") == "Waterfront Station"
-).agg(
-    (F.floor(F.min(F.unix_timestamp("timestamp")) / SLOT) * SLOT).alias("lo"),
-    (F.floor(F.max(F.unix_timestamp("timestamp")) / SLOT) * SLOT).alias("hi"),
-)
-grid_slots = span.select(F.explode(F.sequence("lo", "hi", F.lit(SLOT).cast("bigint"))).alias("s"))
-origins = (
-    spark.table("workspace.default.synthetic_data")
-    .where(F.col("location_name") == "Waterfront Station")
-    .select("origin").distinct()
-)
-
-cells = (
-    grid_slots.crossJoin(origins)
-    .join(counts, ["s", "origin"], "left")
-    .select(
-        F.date_format(F.timestamp_seconds("s"), "yyyy-MM-dd").alias("date"),
-        F.date_format(F.timestamp_seconds("s"), "HH:mm").alias("slot_start"),
-        "origin",
-        F.when(F.coalesce("count", F.lit(0)) < 10, F.lit(None)).otherwise(F.col("count")).alias("present"),
-    )
-)
-
-rows = cells.orderBy("date", "slot_start", "origin").collect()
-
-os.makedirs(f"{OUT}/presence", exist_ok=True)
-by_date = {}
-for r in rows:
-    by_date.setdefault(r.date, []).append(
-        {"slot_start": r.slot_start, "origin": r.origin, "present": r.present}
-    )
-for d, items in by_date.items():
-    with open(f"{OUT}/presence/{d}.json", "w") as f:
-        json.dump(items, f, separators=(",", ":"))
-with open(f"{OUT}/dates.json", "w") as f:
-    json.dump(sorted(by_date), f)
+```bash
+cd frontends/real
+# Uses the signed-in Databricks CLI (databricks auth login). No token is saved.
+set DATABRICKS_CONFIG_PROFILE=workspace1          # or your profile name
+set DATABRICKS_CLI=C:\path\to\databricks.exe      # only if the CLI is not on PATH
+python scripts/export_databricks.py               # pitch dates
+python scripts/export_databricks.py 2026-06-15    # any extra dates
 ```
 
-Quick checks after running:
+For each date the script:
 
-- `dates.json` holds 304 dates, from `2025-11-01` through `2026-08-31`.
-- Each day file has 48 × 36 = 1,728 rows.
-- No `present` value is between 1 and 9.
+1. Reads silver at `:00` and `:30` for that day (read-only SQL).
+2. Stops if the day doesn't have exactly 48 slots, 36 origins and 1,728 rows.
+3. Stops if any slot's silver sum differs from gold `total_count` or from any of gold's four bucket counts.
+4. Writes the day file, then rewrites `dates.json` from the files actually present and updates `manifest.json`.
 
-## Other adapters
+Current export: 2025-12-17, 2025-12-18, 2026-07-22, 2026-07-23, 2026-08-22 and 2026-08-23. Each is the date of a preset incident or the day after, so the time selector can step past midnight. All passed the gold check.
 
-- `?data=mock` always uses mock numbers.
-- `?data=databricks` selects `DatabricksAdapter`, which is a stub (`/api/dates`, `/api/presence?date=&slot=`). Its presence calls throw until it's implemented. See `NEXT_STEPS.md`.
-- You can set the default with `VITE_DATA_SOURCE=mock|static|databricks` at build time.
+## What the app does with missing data
 
-## External reference data
+- `StaticAdapter` is the default and **never falls back to mock**. A date that isn't in `dates.json`, or a missing day file, shows a red "No exported snapshot for …" message and no numbers.
+- Mock numbers appear only with `?data=mock`, always with the "Mock data" badge.
+- `DatabricksAdapter` is still a stub and isn't selected.
 
-`public/data/external/*.json` holds the hubs, crossings, origins, rates, hazards and incidents. Every record names its source. Values that couldn't be confirmed are `null` with a TODO.
+## Grouping note
+
+The app's groups aren't the same as gold's buckets:
+
+- The app's **Vancouver** group is gold's `local_waterfront` (Downtown, West End) plus `vancouver_city` plus UBC.
+- The app's **Metro** group is gold's `metro_vancouver` minus UBC.
+- The app's **Outside Metro** group is the same as gold's `outside_metro_vancouver`.
+
+The overall total is the same as gold's `total_count`.

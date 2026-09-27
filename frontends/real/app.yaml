@@ -1,0 +1,3 @@
+# Databricks Apps: the runtime runs `npm install` and `npm run build`, then this command.
+# server.mjs binds 0.0.0.0 and reads DATABRICKS_APP_PORT.
+command: ["node", "server.mjs"]

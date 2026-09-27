@@ -46,6 +46,20 @@ await page.goto(`${base}?demo=1`);
 await page.waitForSelector(".group-cards");
 await page.waitForTimeout(1500);
 
+// Displayed totals must equal the gold totals recorded by the export.
+const manifest = await (await fetch(new URL("data/internal/manifest.json", base))).json().catch(() => null);
+const shownTotal = async () => Number((await page.locator(".headline .num").first().innerText()).replace(/,/g, ""));
+const goldAt = (date, slot) => manifest?.days?.[date]?.gold_totals?.[slot];
+check(!!manifest, "manifest.json is served");
+check((await page.locator(".source-badge").innerText()).includes("Historical snapshot"), "badge says Historical snapshot · Databricks");
+check((await page.locator(".mock-badge").count()) === 0, "no Mock data badge");
+check((await page.locator("path.home-circle").count()) > 0, "home-area circles carry their group colour class");
+{
+  const g = goldAt("2026-08-22", "21:30");
+  const v = await shownTotal();
+  check(v === g, `Aug 22 21:30 shows ${v}; gold total_count ${g}`);
+}
+
 check((await page.locator(".tab.active").innerText()).includes("Situation"), "demo opens on tab 1");
 check((await page.locator(".incident .name").innerText()).includes("Aug 22"), "demo opens the aug22 incident");
 
@@ -134,17 +148,33 @@ console.log("--- alert with SeaBus closed ---\n" + alert3 + "\n---");
 
 // Time stepping and the drawer.
 const t0 = await page.locator(".time-val .time").innerText();
+await page.keyboard.press("1");
 await page.keyboard.press("ArrowRight");
-await page.waitForTimeout(300);
-check((await page.locator(".time-val .time").innerText()) !== t0, "→ steps the time");
-await page.keyboard.press("ArrowLeft");
+await page.waitForTimeout(500);
+check((await page.locator(".time-val .time").innerText()) === "22:00", "→ steps the time to 22:00");
+check((await shownTotal()) === goldAt("2026-08-22", "22:00"), `22:00 total matches gold (${goldAt("2026-08-22", "22:00")})`);
+for (let i = 0; i < 5; i++) await page.keyboard.press("ArrowRight");
+await page.waitForTimeout(600);
+check((await page.locator(".time-val .time").innerText()) === "00:30", "stepping past midnight reaches 00:30");
+check((await shownTotal()) === goldAt("2026-08-23", "00:30"), `Aug 23 00:30 total matches gold (${goldAt("2026-08-23", "00:30")})`);
+for (let i = 0; i < 6; i++) await page.keyboard.press("ArrowLeft");
+await page.waitForTimeout(600);
 await page.locator(".info-btn").click();
 await page.waitForTimeout(300);
 check(await page.locator(".drawer").isVisible(), "(i) opens About this data");
 await shot("drawer");
 
-console.log("404s (expected: missing internal presence files -> mock fallback):", [...new Set(missing)].join(", ") || "none");
-check(missing.every((p) => p.includes("/data/internal/")), "only internal presence files are missing");
+check(missing.length === 0, `no missing files${missing.length ? ": " + missing.join(", ") : ""}`);
+
+// A date that was not exported must show a visible error, not mock numbers.
+await page.keyboard.press("Escape");
+await page.keyboard.press("1");
+for (let i = 0; i < 44; i++) await page.keyboard.press("ArrowLeft"); // Aug 22 21:30 -> Aug 21 23:30
+await page.waitForTimeout(800);
+const err = await page.locator(".panel .status.critical").innerText().catch(() => "");
+check(err.includes("No exported snapshot for 2026-08-21"), `missing date shows an error: ${err}`);
+check((await page.locator(".group-cards").count()) === 0, "no numbers shown for the missing date");
+await shot("missing-date");
 for (const k of ["1", "2", "3", "4", "5"]) {
   await page.keyboard.press(k);
   await page.waitForTimeout(300);

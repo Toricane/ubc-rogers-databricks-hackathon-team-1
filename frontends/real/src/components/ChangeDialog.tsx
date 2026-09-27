@@ -29,8 +29,10 @@ export function ChangeDialog({
     if (!open && d.open) d.close();
   }, [open]);
 
-  const minDate = dates[0];
-  const maxDate = [dates[dates.length - 1] ?? today, today].sort().pop()!;
+  // Custom dates come from the exported snapshots only.
+  useEffect(() => {
+    if (dates.length && !dates.includes(date)) setDate(dates.includes(today) ? today : dates[dates.length - 1]);
+  }, [dates, date, today]);
 
   const apply = () => {
     if (choice === "custom") {
@@ -83,7 +85,11 @@ export function ChangeDialog({
           <div className="custom-row">
             <label>
               Date
-              <input type="date" value={date} min={minDate} max={maxDate} onChange={(e) => setDate(e.target.value)} />
+              <select value={date} onChange={(e) => setDate(e.target.value)} className="num">
+                {dates.map((d) => (
+                  <option key={d} value={d}>{d}</option>
+                ))}
+              </select>
             </label>
             <label>
               Time

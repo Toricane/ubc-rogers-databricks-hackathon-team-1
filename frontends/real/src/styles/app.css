@@ -314,3 +314,26 @@ button {
 .table td.num, .table td .num, .table td.r { white-space: nowrap; }
 .supply-grid { grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); }
 .totals-card { max-height: 100%; overflow: auto; }
+
+/* ---------- data source badge ---------- */
+.source-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s1);
+  white-space: nowrap;
+  font-size: var(--fs-small);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--r-control);
+  padding: 2px var(--s2);
+}
+.source-badge::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--ok);
+}
+.drawer code { font-family: var(--font-num); font-size: 12px; }
+.time-val .small { white-space: nowrap; }
+.time-val { flex-direction: row; gap: var(--s2); align-items: baseline; }

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { createAdapter } from "./data/adapter";
+import { createAdapter, StaticAdapter, type SnapshotManifest } from "./data/adapter";
 import type { CrossingStatus, Hazard, Incident, PresenceRow, Rate, Reference } from "./data/types";
 import { lastFetchSource } from "./lib/drivebc";
 import { shortDate, stepSlot } from "./lib/time";
@@ -40,6 +40,8 @@ export default function App() {
   const [hazards, setHazards] = useState<Hazard[]>([]);
   const [dates, setDates] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [presenceError, setPresenceError] = useState<string | null>(null);
+  const [manifest, setManifest] = useState<SnapshotManifest | null>(null);
 
   const [incident, setIncident] = useState<Incident | null>(null);
   const [date, setDate] = useState("");
@@ -69,6 +71,7 @@ export default function App() {
         setHazards(hz);
         setDates(ds);
         setMock(adapter.isMock());
+        if (adapter instanceof StaticAdapter) adapter.getManifest().then(setManifest);
         const demo = DEMO ? inc.find((i) => i.id === "aug22") : undefined;
         if (demo) openIncident(demo, demo.slot_start ?? "17:00");
         else setDialogOpen(true);
@@ -97,9 +100,14 @@ export default function App() {
       .then((r) => {
         if (stale) return;
         setRows(r);
+        setPresenceError(null);
         setMock(adapter.isMock());
       })
-      .catch((e) => !stale && setError(String(e)));
+      .catch((e) => {
+        if (stale) return;
+        setRows(null);
+        setPresenceError(e instanceof Error ? e.message : String(e));
+      });
     return () => {
       stale = true;
     };
@@ -131,11 +139,10 @@ export default function App() {
     (dir: 1 | -1) => {
       if (!date) return;
       const next = stepSlot(date, slot, dir);
-      if (dates.length && (next.date < dates[0] || (next.date > dates[dates.length - 1] && next.date !== today))) return;
       setDate(next.date);
       setSlot(next.slot);
     },
-    [date, slot, dates, today],
+    [date, slot],
   );
 
   const toggle = useCallback(
@@ -218,7 +225,16 @@ export default function App() {
           </span>
           <button className="btn" aria-label="30 minutes later" onClick={() => step(1)} disabled={!incident}>▶</button>
         </div>
-        {mock && <span className="mock-badge">Mock data</span>}
+        {mock ? (
+          <span className="mock-badge">Mock data</span>
+        ) : adapter.kind === "static" ? (
+          <span
+            className="source-badge"
+            title={manifest ? `${manifest.source.presence_table} · exported ${manifest.exported_at_utc}` : undefined}
+          >
+            Historical snapshot · Databricks
+          </span>
+        ) : null}
       </div>
 
       <nav className="tabs" role="tablist">
@@ -244,7 +260,12 @@ export default function App() {
       <main className="panel" role="tabpanel">
         <p className="question">{current.question}</p>
         {error && <p className="status critical"><span aria-hidden>✕</span> Could not load data: {error}</p>}
-        {!model && !error && <p className="muted">{incident ? "Loading…" : "Choose an incident to start."}</p>}
+        {!error && presenceError && incident && (
+          <p className="status critical">
+            <span aria-hidden>✕</span> {presenceError} Only exported dates can be shown: {dates.map(shortDate).join(", ")}.
+          </p>
+        )}
+        {!model && !error && !presenceError && <p className="muted">{incident ? "Loading…" : "Choose an incident to start."}</p>}
         {model && tab === 1 && <SituationTab m={model} offline={OFFLINE} />}
         {model && tab === 2 && (
           <CrossingsTab
@@ -269,7 +290,7 @@ export default function App() {
           onClose={() => incident && setDialogOpen(false)}
         />
       )}
-      <InfoDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} m={model} mock={mock} />
+      <InfoDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} m={model} mock={mock} manifest={manifest} />
     </div>
   );
 }
