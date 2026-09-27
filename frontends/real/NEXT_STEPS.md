@@ -1,12 +1,14 @@
 # Next steps
 
-## 1. Databricks App deployment (first)
+## 0. Pitch prep (open)
 
-Deploy Five Bars 3G as a Databricks App in the team workspace:
+- Integrate `capacity_profile.json` (median daily peak 3009.5, 90th percentile 4429 sessions, June–August 2026) once the file is available. The file wasn't found in this repo or the workspace. Both numbers were reproduced from `gold_activity_minute` using half-hour samples and `percentile_cont`. Label it as historical capacity planning, not a forecast.
 
-- Implement `DatabricksAdapter` in `src/data/adapter.ts`. It's a stub today, with intended endpoints `GET /api/dates` and `GET /api/presence?date=&slot=`.
-- Serve those endpoints from a small backend that queries `workspace.default.synthetic_data` on the Serverless Starter Warehouse with the presence definition in `INTEGRATION.md`.
-- Keep the 10-visit suppression on the server side.
+## 1. Databricks App (static, done for the pitch)
+
+The app is hosted as static files: a Vite build plus `server.mjs` and `app.yaml`, with exported snapshots under `dist/data/`. See the README's hosting section. To add dates, run `scripts/export_databricks.py` and redeploy.
+
+After the pitch, not before it: a live backend could implement the `DatabricksAdapter` stub (`GET /api/dates`, `GET /api/presence?date=&slot=`) against `silver_origin_minute`, using the metric in `INTEGRATION.md`. It must use the app's service principal, never browser credentials.
 
 ## 2. Data TODOs (open now)
 

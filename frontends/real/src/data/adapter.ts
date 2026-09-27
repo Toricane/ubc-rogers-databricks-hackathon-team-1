@@ -1,5 +1,5 @@
 // One interface, three implementations. Pick with ?data=mock|static|databricks or VITE_DATA_SOURCE.
-// Default is "static", which falls back to mock (with the badge) when internal files are missing.
+// Default is "static" (exported Databricks snapshots). Mock is only used when asked for explicitly.
 import type { FiveBarsData, HazardId, PresenceRow } from "./types";
 import { loadCrossingStatus, loadHazards, loadIncidents, loadRates, loadReference } from "./external";
 import { mockDates, mockPresence } from "./mock";
@@ -37,33 +37,62 @@ async function tryJson<T>(url: string): Promise<T | null> {
   }
 }
 
+/**
+ * Exported Databricks snapshots. Never falls back to mock: a missing file is an error the UI shows.
+ * Each day's JSON is fetched once and kept in memory; the server lets the browser cache it too.
+ */
 export class StaticAdapter extends ExternalBase implements FiveBarsData {
   readonly kind = "static" as const;
-  private fellBack = false;
-  private mock = new MockAdapter();
+  private dates: Promise<string[]> | null = null;
+  private manifest: Promise<SnapshotManifest | null> | null = null;
   private days = new Map<string, Promise<{ slot_start: string; origin: string; present: number | null }[] | null>>();
 
-  isMock() { return this.fellBack; }
+  isMock() { return false; }
 
-  async getDates() {
-    const dates = await tryJson<string[]>(`${INTERNAL}dates.json`);
-    if (!Array.isArray(dates) || dates.length === 0) {
-      this.fellBack = true;
-      return this.mock.getDates();
-    }
-    return dates;
+  getDates() {
+    this.dates ??= tryJson<string[]>(`${INTERNAL}dates.json`).then((d) => {
+      if (!Array.isArray(d) || d.length === 0)
+        throw new Error("No exported Databricks data: public/data/internal/dates.json is missing. Run scripts/export_databricks.py.");
+      return d;
+    });
+    return this.dates;
+  }
+
+  getManifest() {
+    this.manifest ??= tryJson<SnapshotManifest>(`${INTERNAL}manifest.json`);
+    return this.manifest;
   }
 
   async getPresence(date: string, slot: string): Promise<PresenceRow[]> {
-    if (this.fellBack) return this.mock.getPresence(date, slot);
+    const dates = await this.getDates();
+    if (!dates.includes(date)) throw new MissingSnapshotError(date);
     if (!this.days.has(date)) this.days.set(date, tryJson(`${INTERNAL}presence/${date}.json`));
     const rows = await this.days.get(date)!;
-    if (!rows) {
-      this.fellBack = true;
-      return this.mock.getPresence(date, slot);
+    if (!Array.isArray(rows)) {
+      this.days.delete(date);
+      throw new MissingSnapshotError(date);
     }
-    return rows.filter((r) => r.slot_start === slot).map(({ origin, present }) => ({ origin, present }));
+    const at = rows.filter((r) => r.slot_start === slot);
+    if (at.length === 0) throw new Error(`The ${date} snapshot has no rows for ${slot}.`);
+    return at.map(({ origin, present }) => ({ origin, present }));
   }
+}
+
+export class MissingSnapshotError extends Error {
+  constructor(readonly date: string) {
+    super(`No exported snapshot for ${date}.`);
+  }
+}
+
+export interface SnapshotManifest {
+  kind: string;
+  source: { presence_table: string; check_table: string };
+  metric: string;
+  clock: string;
+  counts: string;
+  source_period: string;
+  exported_at_utc: string;
+  dates: string[];
 }
 
 /** Stub only. Intended endpoints: GET /api/dates, GET /api/presence?date=&slot=. Not implemented. */

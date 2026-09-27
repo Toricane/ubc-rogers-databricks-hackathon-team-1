@@ -1,4 +1,5 @@
 import type { Model } from "../model";
+import type { SnapshotManifest } from "../data/adapter";
 
 const SOURCES: { label: string; url: string; what: string }[] = [
   { label: "City of Vancouver VanMap — Disaster Support Hubs", url: "https://vanmapp1.vancouver.ca/googleKml/DisasterSupportHubs/", what: "25 hub names, addresses, locations" },
@@ -15,7 +16,9 @@ const SOURCES: { label: string; url: string; what: string }[] = [
   { label: "Esri World Street Map", url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer", what: "Map tiles, full colour" },
 ];
 
-export function InfoDrawer({ open, onClose, m, mock }: { open: boolean; onClose: () => void; m: Model | null; mock: boolean }) {
+export function InfoDrawer({
+  open, onClose, m, mock, manifest,
+}: { open: boolean; onClose: () => void; m: Model | null; mock: boolean; manifest: SnapshotManifest | null }) {
   if (!open) return null;
   return (
     <div className="drawer-scrim" onClick={onClose}>
@@ -29,21 +32,32 @@ export function InfoDrawer({ open, onClose, m, mock }: { open: boolean; onClose:
           <h3>What the numbers are</h3>
           <ul>
             <li>
-              <strong>One visit ≠ one person; one carrier's data.</strong> Counts are visits to the Waterfront Station
-              area that are active in the 30-minute slot, from a synthetic table built from one mobile carrier's network.
-              Screens say "people" to keep them short.
+              <strong>Sessions, not verified people.</strong> Each count is the number of mobile attachment sessions active
+              at Waterfront Station at that exact minute (start ≤ time ≤ start + dwell time), from one carrier's data.
+              Screens say "people" to keep them short. "Stranded" is the tool's estimate from home area and open crossings.
             </li>
-            <li>Times are the data's own clock, as recorded. They are not converted.</li>
+            {mock ? (
+              <li><strong>Mock numbers.</strong> These are made up for development, not Databricks results.</li>
+            ) : (
+              <li>
+                <strong>Historical snapshot.</strong> Exported from Databricks
+                {manifest && <> table <code>{manifest.source.presence_table}</code> on {manifest.exported_at_utc.slice(0, 10)}</>}
+                , and checked slot by slot against <code>gold_activity_minute</code>. Source period November 2025 to August 2026.
+                {manifest && <> Dates available: {manifest.dates.join(", ")}.</>}
+              </li>
+            )}
+            <li>Times are shown as recorded. The clock is assumed to be Vancouver local time; that is not confirmed.</li>
             <li>
-              Home areas with fewer than 10 visits in a slot are hidden to protect privacy.
-              {m && (
+              {mock
+                ? "Mock home areas below 10 sessions are hidden."
+                : "Counts are actual values. Nothing is hidden or rounded."}
+              {m && m.sit.skipped > 0 && (
                 <>
-                  {" "}At <span className="num">{m.slot}</span>, <strong className="num">{m.sit.skipped}</strong> home
-                  {m.sit.skipped === 1 ? " area was" : " areas were"} hidden and not counted.
+                  {" "}At <span className="num">{m.slot}</span>, <strong className="num">{m.sit.skipped}</strong> hidden home
+                  {m.sit.skipped === 1 ? " area is" : " areas are"} left out of the totals.
                 </>
               )}
             </li>
-            <li>{mock ? "Showing mock numbers: the real presence files are not loaded yet." : "Showing presence files exported from the team's Databricks table."}</li>
           </ul>
         </section>
 
@@ -60,8 +74,9 @@ export function InfoDrawer({ open, onClose, m, mock }: { open: boolean; onClose:
         </section>
 
         <section>
-          <h3>Assumptions</h3>
+          <h3>Scenario assumptions</h3>
           <ul>
+            <li>Groups differ from the Databricks buckets: UBC counts as Vancouver here, and Downtown and West End are part of Vancouver.</li>
             <li>Walking time is straight-line distance at 5 km/h.</li>
             <li>Max people per hub is a team setting. The City doesn't publish hub capacities.</li>
             <li>Which crossings each Metro area needs is a team judgement.</li>
@@ -86,7 +101,7 @@ export function InfoDrawer({ open, onClose, m, mock }: { open: boolean; onClose:
           <h3>Privacy</h3>
           <ul>
             <li>The table is synthetic. It holds no device, subscriber, or visit IDs, and rows are never linked into people.</li>
-            <li>Only totals by home area are shown. Small groups are hidden.</li>
+            <li>Only totals by home area are shown. No row-level data reaches the browser.</li>
             <li>DriveBC requests carry no personal data.</li>
             <li>The alert is an area broadcast draft, not targeted messaging.</li>
           </ul>

@@ -63,7 +63,8 @@ export function SendPeopleTab({
               <Polyline
                 key={`line-${a.hub.id}`}
                 positions={[[ref.site.lat, ref.site.lng], tip]}
-                pathOptions={{ className: "assign-line", weight: 3 + 3 * (a.total / maxTotal) }}
+                className="assign-line"
+                pathOptions={{ weight: 3 + 3 * (a.total / maxTotal) }}
               >
                 <Tooltip permanent direction="center" className="line-label">assignment</Tooltip>
               </Polyline>
