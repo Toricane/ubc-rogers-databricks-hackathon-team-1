@@ -220,8 +220,29 @@ await page.keyboard.press("2");
 await page.waitForTimeout(800);
 check((await page.locator(".route-line").count()) > 0, "tab 2 draws scheduled routes home");
 check((await page.locator(".origin-dot").count()) > 0, "tab 2 draws home-area dots");
+// Zoom in first: toggling a crossing must keep the officer's view and the map box size.
+{
+  const mb = await page.locator(".map-wrap").boundingBox();
+  await page.mouse.move(mb.x + mb.width * 0.4, mb.y + mb.height * 0.35);
+  await page.mouse.wheel(0, -400);
+  await page.waitForTimeout(900);
+}
+const mapBefore = await page.locator(".map-wrap").boundingBox();
+const pinBefore = await page.locator(".wf-pin").first().boundingBox();
 await xrow("SeaBus").locator("button.toggle").click();
 await page.waitForTimeout(600);
+const pinAfter = await page.locator(".wf-pin").first().boundingBox();
+check(
+  !!pinBefore && !!pinAfter && Math.abs(pinBefore.x - pinAfter.x) < 1 && Math.abs(pinBefore.y - pinAfter.y) < 1,
+  "map does not move or zoom when a crossing is toggled",
+);
+const mapAfter = await page.locator(".map-wrap").boundingBox();
+check(!!mapBefore && !!mapAfter && Math.abs(mapBefore.height - mapAfter.height) < 1, "map box keeps its size when a crossing is toggled");
+// Back to the default view for the checks and screenshot below.
+await page.keyboard.press("1");
+await page.waitForTimeout(300);
+await page.keyboard.press("2");
+await page.waitForTimeout(800);
 const nv = await page.locator(".bus-table tr.row-divert", { hasText: "North Vancouver" }).innerText().catch(() => "");
 console.log("North Vancouver row:", nv.replace(/\s+/g, " "));
 check(/Via/.test(nv) && /\d/.test(nv.split("\t")[4] ?? nv), "North Vancouver is diverted with a bus count");
