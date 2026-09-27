@@ -17,8 +17,8 @@ Rules (documented so the output can be checked):
 - A pattern is kept for an origin when (a) it does not pass within FOREIGN_RADIUS_KM of a crossing outside
   that origin's list (tighter than CROSSING_RADIUS_KM so shoreline rail near a bridge doesn't count), and
   (b) either it crosses one of the origin's crossings and no other Metro origin listing that crossing would
-  pick the same alight stop while being closer to it (North vs West Vancouver both list Lions Gate) and the
-  alight stop's nearest Metro centroid is this origin, or it crosses nothing and the alight stop's nearest
+  be closer to the alight stop while the trip continues on to that rival's nearest stop (North vs West
+  Vancouver both list Lions Gate), or it crosses nothing and the alight stop's nearest
   home-area centroid (all labels with coordinates) is this origin. This drops trips that end in Vancouver
   neighbourhoods or on the wrong side of Burrard Inlet or the Fraser.
 - Known limitation: centroids stand in for municipal boundaries, so a stop near a border can be assigned to
@@ -139,8 +139,8 @@ def build_transit(gtfs_zip_path: str, origins: list[dict], crossings: list[dict]
     metro = [o for o in origins if o.get("group") == "metro" and o.get("lat") is not None]
     placed = [o for o in origins if o.get("lat") is not None]
 
-    def nearest_origin(lat, lng, among=placed):
-        return min(among, key=lambda o: _km(lat, lng, o["lat"], o["lng"]))["name"]
+    def nearest_origin(lat, lng):
+        return min(placed, key=lambda o: _km(lat, lng, o["lat"], o["lng"]))["name"]
     with zipfile.ZipFile(gtfs_zip_path) as z:
         version = feed_info(gtfs_zip_path).get("feed_version")
         services = _active_services(z, service_date)
@@ -211,10 +211,10 @@ def build_transit(gtfs_zip_path: str, origins: list[dict], crossings: list[dict]
                 rivals = [m for m in metro if m["name"] != o["name"] and set(m.get("crossings", [])) & set(mine)]
                 d_me = _km(*here, o["lat"], o["lng"])
                 trip_stops = after[after["trip_id"] == g["trip_id"].iloc[0]]
-                if any(_km(*here, m["lat"], m["lng"]) < d_me and _nearest_stop(trip_stops, m) == key[2]
+                seq = trip_stops.set_index("stop_id")["stop_sequence"]
+                # Drop when a rival area is nearer this stop and the trip goes on into that rival area.
+                if any(_km(*here, m["lat"], m["lng"]) < d_me and seq[_nearest_stop(trip_stops, m)] >= seq[key[2]]
                        for m in rivals):
-                    continue
-                if nearest_origin(*here, metro) != o["name"]:  # alight stop lies nearer another Metro area
                     continue
             elif nearest_origin(*here) != o["name"]:
                 continue

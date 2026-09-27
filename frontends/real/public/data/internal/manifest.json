@@ -10,7 +10,7 @@
   "clock": "minute_timestamp_local as recorded; assumed Vancouver local, not confirmed. Not shifted.",
   "counts": "Actual active_count values. No suppression. Sessions, not verified unique people.",
   "source_period": "2025-11-01 to 2026-08-31",
-  "exported_at_utc": "2026-09-27T03:40:45Z",
+  "exported_at_utc": "2026-09-27T03:51:19Z",
   "dates": [
     "2025-12-17",
     "2025-12-18",
@@ -418,7 +418,7 @@
         "gold_check": "present matches gold total_count in all 48 slots"
       }
     },
-    "routes": 15,
+    "routes": 17,
     "feed": {
       "version": "26SEP_20260925",
       "start": "2026-09-07",
