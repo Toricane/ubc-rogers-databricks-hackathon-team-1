@@ -26,8 +26,6 @@ The current pitch focuses on **response**. Forecasting and seasonal preparation 
 
 ## Built with Databricks
 
-![Bronze, Silver and Gold data flow](rogers_waterfront_minute/presentation/story_pipeline.png)
-
 Databricks provides **Delta storage, Unity Catalog, SQL/Spark transformations, cumulative windows partitioned by origin, warehouse validation queries, and Databricks Apps hosting**.
 
 Prepared datasets are under `workspace.rogers_waterfront_minute`:
