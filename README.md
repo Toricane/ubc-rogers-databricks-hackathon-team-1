@@ -1,103 +1,167 @@
-# UBC Rogers Databricks Hackathon — Team 1
+# Five Bars 3G
 
-Team workspace for the Rogers, Databricks, and UBC Data Intelligence for Smarter Communities Hackathon (September 25–27, ICICS Atrium).
+**From cellular activity to emergency-response scenarios around Waterfront, Vancouver.**
 
-Build one clear **transit and/or security** solution from the synthetic mobility table. Show the analysis in Databricks, and show the recommendation in a separate interactive tool (dashboard, app, or similar) that a judge can use.
+Built for the **Rogers × UBC × Databricks — Data Intelligence for Smarter Communities Hackathon**.
 
-## Data
+Five Bars helps an emergency-management duty officer explore how a disruption could affect people around Waterfront and compare transport, support-location and supply options. It combines historical synthetic cellular attachment counts with geographic reference data and explicit response assumptions.
 
-Unity Catalog table `workspace.default.synthetic_data` (managed Delta) on workspace `dbc-d1555967-1ea3`. Query it with the Serverless Starter Warehouse. This Git folder is also checked out in that workspace.
+**[Databricks App](https://five-bars-3g-7474653168808484.aws.databricksapps.com/)**
 
-| Column | Type | Meaning |
-| --- | --- | --- |
-| `location_name` | string | `UBC`, `Waterfront Station`, or `Park Royal Mall` |
-| `longitude`, `latitude` | double | Coordinates of that place, repeated on every row. Not a per-person track, and not the origin’s location. |
-| `timestamp` | timestamp | Visit start, a 1-second UTC instant. Bin and label hours in UTC. Do not convert to Pacific. |
-| `origin` | string | Home area of the visit, one of 36 labels (Vancouver neighbourhoods, Metro municipalities, provinces, `International`, and `UBC`). Not a person id and not the previous stop. |
-| `dwell_time` | bigint | Minutes the visit stays active after `timestamp`. Integer minutes, not a 30-minute unit. |
+The hosted app and notebook require appropriate Databricks access. This is a historical scenario prototype, not a live population feed.
 
-There is no device, subscriber, or visit id. A row is one visit. Do not link rows into people.
+## The problem and solution
 
-**Location: Waterfront Station.** Filter every analysis with `location_name = 'Waterfront Station'`.
+During extreme weather, people near a transport hub may face different barriers to getting somewhere safe. A single area-wide count hides that variation. We use recorded home origins to add context, then let the operator explore disruption and support scenarios.
 
-The table has 21,496,090 rows, from `2025-11-01 00:00:00Z` through `2026-08-31 23:59:55Z`. Waterfront Station has 8,060,012 of those rows.
+| Screen | Operator task |
+|---|---|
+| Situation | Inspect activity at a selected date/time and its origin composition |
+| Crossings | Set crossing availability for a disruption scenario |
+| Where to send people | Compare candidate support-location assignments under an assumed capacity |
+| Supplies | Calculate conditional resource requirements and inventory gaps |
+| Alert | Draft an area-facing message for review; no message is sent |
 
-**Timezone: UTC.** Checked on the Serverless Starter Warehouse (session `Etc/UTC`) by comparing hour-of-day. Read as UTC, 91.0% of rows fall in 07:00–22:00 and 5.4% fall in 00:00–05:00. Converted to `America/Vancouver`, daytime falls to 56.6% and overnight rises to 33.9%. The same winner holds for UBC, Waterfront Station, and Park Royal Mall. A `Z` in exports matches this clock. 18:00 in the table is 18:00 UTC, not 6pm Pacific.
+The current pitch focuses on **response**. Forecasting and seasonal preparation are outside the presentation scope. Home origin alone does not establish someone's destination, ability to travel or need for assistance; the app's response rules are scenario assumptions.
 
-**Time grain.** At Waterfront Station every 30-minute UTC bin from `2025-11-01 00:00Z` through `2026-08-31 23:30Z` is occupied (14,592 bins). Rows are spread evenly inside each bin: minute offsets 0–29 each hold about 268,000 rows. Timestamps are whole seconds, and the share on an exact `:00` or `:30` matches a uniform 1-second clock. `dwell_time` runs from 1 to 17,941 minutes (median 53); 3.1% are multiples of 30. Keep 30-minute windows as the default aggregation. Do not snap events to the half hour. On this warehouse the session is already UTC, so `hour(timestamp)` and `window(timestamp, '30 minutes')` are the right bins. If a session is not UTC, convert to UTC before taking the hour. Do not convert to `America/Vancouver` for bins or axis labels.
+## Built with Databricks
 
-The same origin has a median of 8 Waterfront rows in one 30-minute bin (up to 347). `longitude` and `latitude` on those rows are Waterfront’s coordinates.
+Databricks provides **Delta storage, Unity Catalog, SQL/Spark transformations, cumulative windows partitioned by origin, warehouse validation queries, and Databricks Apps hosting**.
 
-Other datasets are allowed only if they are open source.
+Prepared datasets are under `workspace.rogers_waterfront_minute`:
 
-## How the rows were produced
+| Layer | Dataset | One row represents | Verified rows |
+|---|---|---|---:|
+| Bronze | `bronze_attachments` | One original Waterfront attachment record | 8,060,012 |
+| Silver | `silver_sessions_local` | One validated session with start/end times | 8,060,012 |
+| Silver | `silver_origin_minute` | One origin at one minute, including zero counts | 15,759,360 |
+| Gold | `gold_activity_minute` | One minute with a total and four bucket counts | 437,760 |
 
-The generator is not in this repo. Delta history is a file upload on 2026-09-25 21:39 UTC (`CREATE TABLE AS SELECT`, comment "Created by the file upload UI", 21,496,090 rows), then one `OPTIMIZE`. Organizers said the file is a statistical model of actual network data collected every second, adjusted where the synthetic aggregates deviated from the actual data. Cell-tower coverage radius, and devices registering on arrival and unregistering on departure, were applied before export.
+**Diagram note:** Silver is illustrated as an equivalent pivoted display: **437,760 minutes × 36 origin-count columns**. Its stored layout has 36 rows per minute. Gold has four bucket-count columns plus a total, alongside time and identifying fields.
 
-Checked on the full table on 2026-09-26, all three `location_name` values:
+### How presence is calculated
 
-- One coordinate per site, repeated on every row. Waterfront is `-123.1115, 49.2857` (Wikipedia pin `49.28583, -123.11167`). Park Royal is `-123.138, 49.3265` (Wikipedia `49.326, -123.137`). UBC is `-123.246, 49.2606`. The radius is not a column.
-- `timestamp` is the register time. `dwell_time` is integer minutes until unregister. Median dwell is 53 minutes at Waterfront and 49 at UBC, flat across daytime hours. At Park Royal the median is 71 overall, about 44 overnight and about 80 in the afternoon. Within a site, median dwell barely changes by `origin`.
-- The second-of-minute matches a uniform clock. Within the hour, the later 30 minutes are heavier while volume is rising and lighter while it is falling. That is the hourly rate, not a timetable snapped to `:00` or `:30`.
-- Volume is place-specific. UBC weekdays follow the [UBC Vancouver 2025/26 academic calendar](https://vancouver.calendar.ubc.ca/academic-year-202526): term-time weekday means about 38,000–46,000, reading break Feb 16–20 about 23,000, winter break about 15,000, and a jump from 10,202 on Jan 4 to 40,500 on Jan 5 (Term 2 start). Waterfront on Jan 5 is 17,210. Park Royal peaks on Saturday, in December, and on Boxing Day 2025 (37,281, its busiest day).
-- After hour, weekday, and half-hour, 30-minute counts are overdispersed versus Poisson (variance/mean 30 at Park Royal, 51 at Waterfront, 128 at UBC).
-- [Open-Meteo](https://open-meteo.com/) daily rain and temperature at the Waterfront coordinate, 2025-11-01 through 2026-08-31, correlate near 0 with visit counts after month and weekday (about +0.05 at Park Royal, −0.02 at UBC, +0.05 at Waterfront). Weather is not a pattern to chase in this extract.
-- Ontario is 16.7% of Waterfront rows and 17.4% of UBC rows, and 43.6% of Waterfront rows at 04:00 UTC, because local origins drop off faster overnight. Treat that night share as a flatter home-label component.
-
-The charts for this section are recomputed in [notebooks/04_generation_report.py](notebooks/04_generation_report.py). It does not create a silver or gold table.
-
-## How this gets judged
-
-| Area | Points |
-| --- | --- |
-| Interactive tool with recommendations grounded in the data | 25 |
-| Databricks analysis (patterns, segmentation, visualization, or modeling) | 15 |
-| Extra credit for a well-structured, reproducible pipeline | +5 |
-| Originality and a clearly stated impact | 10 |
-| 5-minute pitch | 5 |
-
-Sunday presentations are 5 minutes plus a short Q&A.
-
-## Repo
-
-```
-notebooks/01_timestamp_timezone.py   # UTC vs America/Vancouver check (verdict: UTC)
-notebooks/02_grain_and_identity.py   # 30-minute grid vs 1-second clock; no visitor id
-notebooks/03_waterfront_activity.py  # active visits by 30-minute bin and origin
-notebooks/04_generation_report.py    # site calendars, dwell, and home-label mix
-notebooks/05_dispatch.py             # gold_route_* tables for the "Getting home" tab (Jul 22 incident, TransLink GTFS)
-notebooks/dispatch_transit.py        # GTFS parsing used by 05_dispatch.py (plain module)
-frontends/real/                      # Cell-Safe, the duty-officer tool
-frontends/waterfront-presence-sketch/   # one test player; add other tools as sibling folders
+```text
+end_time = start_time + dwell_time in minutes
+active at time t when start_time <= t <= end_time
 ```
 
-## Dispatch tables
+An attachment starting at **09:35:15** with **44 minutes** of dwell ends at **10:19:15**. It counts at 09:36 but not at 10:20. We apply the rule to every record, count by origin, then aggregate the origins into buckets.
 
-`notebooks/05_dispatch.py` writes three tables in `workspace.rogers_waterfront_minute`, read by `frontends/real/scripts/export_databricks.py`:
+Cleaning trims labels, parses time/duration fields, quarantines invalid temporal values and checks origin mappings. The current data has **zero temporal rejections**. **2,881 durations exceed 24 hours; they are flagged and retained.** Duplicate-looking records are retained because no device identifier establishes duplication.
 
-| Table | Grain | Holds |
-|---|---|---|
-| `gold_route_events` | incident | The sourced Jul 22 2026 heat and smoke incident (same record as `incidents.json` `jul22`) |
-| `gold_route_demand` | date × 30-min slot × origin | `present` at the slot minute and `departing_30m`, sessions ending in `[slot, slot + 30 min)`, for the incident date and the day after |
-| `gold_route_transit` | origin × TransLink route | Scheduled TransLink services from Waterfront toward each Metro home area, from the static GTFS feed (not real-time) |
+### Four mutually exclusive origin buckets
 
-Confirmed on 2026-09-26: `silver_sessions_local` agrees with `silver_origin_minute` (4,372 sessions active at 2026-07-22 17:00 either way), and `end_time_local` is exactly `start_time_local + dwell_minutes`. `gold_route_demand` has 1,728 rows per date; `departing_30m` sums to 35,605 on Jul 22 and 48,695 on Jul 23. Counts are sessions, not people. Only sourced incidents are used.
+| Bucket | Original labels | Definition |
+|---|---:|---|
+| Local to Waterfront | 2 | Downtown and West End |
+| Vancouver City | 15 | Other supplied Vancouver neighbourhoods |
+| Metro Vancouver | 12 | Other supplied Metro origins, including UBC |
+| Outside Metro Vancouver | 7 | Supplied provincial, regional and international labels |
 
-## Frontends
+See the [complete mapping](rogers_waterfront_minute/silver/origin_mapping.json). The notebook visualises all 36 labels.
 
-Each prototype lives in its own folder under `frontends/`. `waterfront-presence-sketch` is one test player, not the team's finished tool. It plays Waterfront active-visit counts: a visit counts in each 30-minute UTC bin that overlaps `[timestamp, timestamp + dwell_time minutes)`. Circles are home areas, not people. Canada shows provinces and grouped regions. The Metro inset shows Vancouver neighbourhoods and municipalities. `International` is in the bars only.
+## Dataset and demonstration
 
-From the 2026-09-26 extract: the busiest clock is 17:00 UTC, Wednesday is the busiest weekday, June 2026 has the most presence per day and August 2026 the least, and the largest origin totals are Ontario, Surrey, and Burnaby.
+Source: **`workspace.default.synthetic_data`**, supplied by the organisers. Fields are `location_name`, `longitude`, `latitude`, `timestamp`, `origin` and `dwell_time` in minutes.
 
-Home-area positions are centroids from open boundaries, cited in [frontends/waterfront-presence-sketch/public/data/origins.json](frontends/waterfront-presence-sketch/public/data/origins.json):
+The implemented pipeline selects **Waterfront Station**, with records spanning **November 2025–August 2026**. UBC and Park Royal are possible extensions, not completed pipelines here.
 
-- City of Vancouver Open Data, `local-area-boundary`: https://opendata.vancouver.ca/explore/dataset/local-area-boundary/information/
-- Statistics Canada 2021 digital boundary files `lpr_000b21a_e` and `lcsd000b21a_e`: https://www12.statcan.gc.ca/census-recensement/2021/geo/sip-pis/boundary-limites/index2021-eng.cfm
+The source clock is treated as **assumed Vancouver local**, without subtracting an offset; this interpretation is not externally confirmed. The app uses half-hour snapshots, consistent with the organiser's recommended granularity. Reconstructing minute counts does not create new measured precision.
 
-The basemap is OpenStreetMap tiles. Run the sketch with:
+Suggested demo: **July 22, 2026 at 17:00**.
 
+| Gold bucket | Active sessions |
+|---|---:|
+| Local to Waterfront | 378 |
+| Other Vancouver City | 861 |
+| Other Metro Vancouver | 1,918 |
+| Outside Metro Vancouver | 1,215 |
+| **Total** | **4,372** |
+
+All 36 Silver origin counts reconcile to this total. The full Gold table has zero bucket-total mismatches. See the [verification artifact](rogers_waterfront_minute/presentation/visual_story_validation.json).
+
+For the five-minute pitch: introduce the problem, spend about one minute on the visual data story, then demonstrate one disruption and its conditional support requirements in the app. A historical incident can motivate the scenario; it does not establish what caused patterns in the synthetic records.
+
+## How the deployed app reads data
+
+```text
+Databricks Silver/Gold tables
+        ↓ export and reconcile selected dates
+JSON snapshots packaged with the React app
+        ↓ deploy
+Databricks Apps → browser cache → interactive scenario
 ```
-cd frontends/waterfront-presence-sketch
+
+The frontend teammate's deployment exports Silver at `:00` and `:30`, validates against Gold, and serves one JSON file per day. The browser caches the selected day. Reported exported dates are December 17–18, 2025; July 22–23, 2026; and August 22–23, 2026. Next-day files support scenarios crossing midnight.
+
+**Catalogue changes do not automatically appear in the app.** Rebuild affected derived tables, re-export snapshots, redeploy and refresh cached files. No browser-side Databricks credentials or live SQL queries are needed during the demo.
+
+## Run this checkout locally
+
+With Node.js and npm installed, run from this directory:
+
+```bash
+cd real
 npm install
 npm run dev
 ```
+
+Open **http://localhost:5175/**.
+
+```bash
+npm test           # frontend logic tests
+npm run build      # type-check and production build
+npm run preview    # preview the production build
+```
+
+**Checkout status:** `real/` is an earlier frontend snapshot. The teammate's deployed checkout uses `frontends/real/` and adds `server.mjs`, `app.yaml`, a `start` script and an export script; those files are not present here. Merge that deployment revision to reproduce the hosted build. In this local snapshot, missing exports can trigger labelled mock fallback, and the Databricks adapter is a stub. Check the data badge before presenting.
+
+The deployed app uses a small Node server to serve built React assets and JSON. A notebook may trigger deployment, but the application runs independently in Databricks Apps. See the [Databricks deployment guide](https://docs.databricks.com/aws/en/dev-tools/databricks-apps/deploy).
+
+## Reproduce the analysis
+
+- [Current pipeline instructions](rogers_waterfront_minute/README.md): active SQL/Python entry points reuse existing cleaned attachments; they are not a fresh-workspace bootstrap.
+- [Current SQL transformations](rogers_waterfront_minute/01_SQL_warehouse_pipeline.sql): local-clock Silver origin counts and Gold buckets.
+- [Frontend data contract](rogers_waterfront_minute/gold/TEAM_HANDOFF.md): schema and examples.
+- [Presentation notebook with saved outputs](rogers_waterfront_minute/presentation/Waterfront_final_presentation.ipynb): six visuals explaining the data story.
+- [Standalone presentation HTML](rogers_waterfront_minute/presentation/Waterfront_final_presentation.html): download and open locally to view the saved figures.
+- [Visual builder](rogers_waterfront_minute/presentation/build_visual_story.py) and [SQL queries](rogers_waterfront_minute/presentation/pitch_queries.json): chart construction and query provenance.
+
+Saved figures were rendered from verified Databricks warehouse results. Notebook plotting cells can rerun the queries using Spark. Legacy scripts and older integration documents may use superseded UTC or interval-overlap definitions; follow the current pipeline instructions above.
+
+## Repository layout
+
+```text
+real/                           Local React/Vite frontend snapshot
+  src/                          Screens, adapters and scenario logic
+  public/data/external/         Geographic references and scenario inputs
+rogers_waterfront_minute/
+  bronze/                       Source ingestion history
+  silver/                       Cleaning, origin mapping and minute counts
+  gold/                         Bucket aggregates and frontend contract
+  presentation/                 Notebook, charts, script and verification
+competition/                    Earlier exploration and external-data research
+WORKSHOP_PREPARATION.md          Original workshop notes, archived
+```
+
+## Assumptions and limitations
+
+- **Sessions are not unique people.** No device identifier or device-to-person calibration is available. Tower coverage is not a station boundary.
+- **Origins are not destinations or assistance requests.** Travel and lodging classifications are scenario rules, not measured individual needs.
+- **Support locations need operational confirmation.** A map listing does not establish opening status, staffing, usable capacity or suitability for overnight accommodation. Straight-line walking estimates are not safe route instructions.
+- **Resources are conditional estimates.** Provision rates, attendance, duration, turnover and stock are inputs. Peak concurrent activity is not total people served over an event.
+- **The pitch uses historical scenarios.** Live DriveBC mode is not part of the current demo flow; crossing settings should be explicit.
+- **Alerts are drafts.** The prototype does not send messages or make operational dispatch decisions.
+
+The local frontend snapshot groups UBC differently from the canonical Gold mapping. Align the UI with the mapping above when merging deployment changes; matching overall totals alone does not establish matching group totals.
+
+## Sources and acknowledgements
+
+- **Rogers, UBC and Databricks:** hackathon and organiser-provided synthetic cellular data.
+- **City of Vancouver and geographic references:** source links in [hubs.json](real/public/data/external/hubs.json) and [origins.json](real/public/data/external/origins.json).
+- **Crossing and incident references:** sources recorded in [crossings.json](real/public/data/external/crossings.json) and [incidents.json](real/public/data/external/incidents.json).
+- **Resource inputs:** source links and assumptions in [rates.json](real/public/data/external/rates.json); these are prototype scenario inputs, not a validated emergency operating standard.
+- **Workshop starter:** [Data Intelligence for Smarter Communities](https://github.com/databricks-solutions/data-intelligence-for-smarter-community).
+
+The competition dataset is accessed through the team's Databricks workspace. External source terms remain applicable; this README does not grant redistribution rights to third-party data.
