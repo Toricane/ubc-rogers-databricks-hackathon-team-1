@@ -2,7 +2,9 @@ import { describe, expect, it } from "vitest";
 import type { Crossing, Hub, Origin, Rate } from "../data/types";
 import { alertText, assignHubs, busesNeeded, busPlan, canGetHome, ceilSafe, cycleHours, pickRoute, situation, stranded, supplies, totalBuses } from "./logic";
 import { fixtureRoutes } from "./__fixtures__/transit";
-import { stepSlot } from "./time";
+import { stepBy, stepSlot } from "./time";
+import { needsFor } from "./needs";
+import hazardsFile from "../../public/data/external/hazards.json";
 
 const O = (name: string, group: Origin["group"], crossings: string[] = []): Origin => ({
   name, group, crossings, lat: null, lng: null,
@@ -86,13 +88,20 @@ describe("supplies", () => {
   const blankets = rate({ id: "blankets", applies_to: "lodging" });
   const charging = rate({ id: "charging", rate: 0.1 });
 
-  it("heat hazard uses only its resources, and cots vanish when nobody is lodging", () => {
-    const heat = [water, n95, cooled, cots];
-    const rows = supplies({ waiting: 100, lodging: 0, total: 100 }, heat, 72);
+  it("heat hazard: water, masks and floor space only — no cots, even with people who can't get home", () => {
+    const heatIds = hazardsFile.hazards.find((h) => h.id === "heat_smoke")!.resources;
+    expect(heatIds).toEqual(["water", "n95", "cooled_floor_space"]);
+    const all = [water, n95, cooled, cots, blankets, charging];
+    const heat = all.filter((r) => heatIds.includes(r.id));
+    const rows = supplies({ waiting: 100, lodging: 40, total: 140 }, heat, 72);
     expect(rows.map((r) => r.rate.id)).toEqual(["water", "n95", "cooled_floor_space"]);
-    const withLodging = supplies({ waiting: 100, lodging: 5, total: 105 }, heat, 72);
-    expect(withLodging.map((r) => r.rate.id)).toContain("cots");
-    expect(withLodging.map((r) => r.rate.id)).not.toContain("blankets");
+    expect(rows[0].needed).toBe(140 * 4 * 3); // 4 L/person/day for 72 h
+  });
+
+  it("storm, lightning, snow and ice keep cots for overnight lodging", () => {
+    for (const id of ["storm", "lightning", "snow_ice"]) {
+      expect(hazardsFile.hazards.find((h) => h.id === id)!.resources).toContain("cots");
+    }
   });
 
   it("cots apply to lodging only; water scales with duration", () => {
@@ -146,12 +155,46 @@ describe("alertText", () => {
     expect(t).toContain("If you live in Burnaby: head home by road");
     expect(t).toContain("Visiting from outside Metro Vancouver: go to Near Hub, 1 Near St for overnight shelter.");
   });
+
+  it("heat and smoke send people to cooling spaces, not overnight shelter", () => {
+    const closed = new Set(["seabus", "lions_gate", "ironworkers"]);
+    const st = stranded(s.byOrigin, closed);
+    const t = alertText(s.byOrigin, crossings, closed, assignHubs(site, hubs, st.waiting, st.lodging, 500), needsFor("heat_smoke"));
+    expect(t).toContain("If you live in North Vancouver: crossings are closed. Wait at a cooling space: Near Hub, 1 Near St.");
+    expect(t).toContain("Visiting from outside Metro Vancouver: go to Near Hub, 1 Near St to cool down and breathe cleaner air.");
+    expect(t).not.toContain("overnight");
+  });
+});
+
+describe("hazard wording", () => {
+  it("heat and smoke: cooling / cleaner-air space, not lodging", () => {
+    const w = needsFor("heat_smoke");
+    expect(w.outsideNeed).toBe("Need a cooling / cleaner-air space");
+    expect(w.metroClosed).toBe("wait at a cooling space (crossing closed)");
+    expect(w.sendHeadline("1,475", 3)).toBe("Send 1,475 people to cooling spaces.");
+    expect(w.lodgingColumn).not.toMatch(/lodging|overnight/i);
+  });
+
+  it("storm, lightning, snow and ice keep waiting + overnight lodging", () => {
+    for (const h of ["storm", "lightning", "snow_ice"] as const) {
+      const w = needsFor(h);
+      expect(w.outsideNeed).toBe("Need overnight lodging");
+      expect(w.metroClosed).toBe("stranded (crossing closed)");
+      expect(w.sendHeadline("654", 2)).toBe("Send 654 people to 2 hubs.");
+      expect(w.sendHeadline("10", 1)).toBe("Send 10 people to 1 hub.");
+    }
+  });
 });
 
 describe("time", () => {
   it("steps across midnight on minutes-of-day", () => {
     expect(stepSlot("2026-08-22", "23:30", 1)).toEqual({ date: "2026-08-23", slot: "00:00" });
     expect(stepSlot("2026-03-01", "00:00", -1)).toEqual({ date: "2026-02-28", slot: "23:30" });
+  });
+  it("steps by single minutes for the slider", () => {
+    expect(stepBy("2026-07-22", "17:00", 1)).toEqual({ date: "2026-07-22", slot: "17:01" });
+    expect(stepBy("2026-07-22", "23:59", 1)).toEqual({ date: "2026-07-23", slot: "00:00" });
+    expect(stepBy("2026-07-23", "00:10", -30)).toEqual({ date: "2026-07-22", slot: "23:40" });
   });
 });
 

@@ -67,7 +67,7 @@ export function InfoDrawer({
           <ul>
             <li>Vancouver (including UBC): can go home without a bridge or crossing.</li>
             <li>Metro: can go home if any of its crossings is open. Burnaby, New Westminster and Port Moody can go home by road. Otherwise they wait at a hub.</li>
-            <li>Outside Metro (other provinces, rest of BC, international): need overnight lodging.</li>
+            <li>Outside Metro (other provinces, rest of BC, international): need overnight lodging. In heat and smoke they need a cooling / cleaner-air space instead, and Metro residents whose crossings are closed wait there too.</li>
             <li>Hubs are filled nearest first, up to the "max people per hub" setting. Waiting people are placed before lodging.</li>
             <li>Supplies: people × rate, × days for water, rounded up, minus what's on hand.</li>
             <li>The officer's crossing settings always override DriveBC.</li>
@@ -82,7 +82,7 @@ export function InfoDrawer({
             <li>Walking time is straight-line distance at 5 km/h.</li>
             <li>Max people per hub is a team setting. The City doesn't publish hub capacities.</li>
             <li>Which crossings each Metro area needs is a team judgement.</li>
-            <li>Cots and blankets: 1 per person staying overnight. N95 masks: 1 per person during smoke. Charging: 1 point per 10 people. All team assumptions.</li>
+            <li>Cots and blankets: 1 per person staying overnight (not used in heat and smoke). N95 masks: 1 per person during smoke. Charging: 1 point per 10 people. All team assumptions.</li>
             <li>The deadline is the incident time plus 1 hour, as a target.</li>
           </ul>
         </section>

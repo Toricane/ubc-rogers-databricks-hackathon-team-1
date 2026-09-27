@@ -27,6 +27,13 @@ export function addDays(date: string, days: number): string {
   return `${u.getUTCFullYear()}-${String(u.getUTCMonth() + 1).padStart(2, "0")}-${String(u.getUTCDate()).padStart(2, "0")}`;
 }
 
+/** Step a (date, "HH:MM") pair by any number of minutes, rolling the date over midnight. */
+export function stepBy(date: string, time: string, minutes: number): { date: string; slot: string } {
+  const m = toMin(time) + minutes;
+  const days = Math.floor(m / DAY_MIN);
+  return { date: days ? addDays(date, days) : date, slot: fromMin(m) };
+}
+
 /** Step a (date, slot) pair by ±30 minutes, rolling the date over midnight. */
 export function stepSlot(date: string, slot: string, dir: 1 | -1): { date: string; slot: string } {
   const m = toMin(slot) + dir * SLOT_MIN;

@@ -16,6 +16,12 @@ export function SituationTab({ m, offline }: { m: Model; offline: boolean }) {
       <h1 className="headline">
         <span className="num">{fmt(sit.total)}</span> people are in the Waterfront area at <span className="num">{m.slot}</span>.
       </h1>
+      {m.needs.heat && (
+        <p className="hazard-line">
+          <span className="hazard-dot" aria-hidden />
+          Heat warning in effect{m.incident.description ? ` · ${m.incident.description}` : ""}
+        </p>
+      )}
 
       <div className="group-cards">
         <div className="card group-card g-vancouver">
@@ -28,13 +34,13 @@ export function SituationTab({ m, offline }: { m: Model; offline: boolean }) {
           <div className="big num">{fmt(sit.byGroup.metro)}</div>
           <div className="status-line">
             <span className="status ok"><span aria-hidden>✓</span> <span className="num">{fmt(st.metroHome)}</span> can get home</span>
-            <span className="status critical"><span aria-hidden>✕</span> <span className="num">{fmt(st.waiting)}</span> stranded (crossing closed)</span>
+            <span className="status critical"><span aria-hidden>✕</span> <span className="num">{fmt(st.waiting)}</span> {m.needs.metroClosed}</span>
           </div>
         </div>
         <div className="card group-card g-outside">
           <div className="card-title"><span className="dot g-outside" />Outside Metro</div>
           <div className="big num">{fmt(sit.byGroup.outside)}</div>
-          <div className="status critical"><span aria-hidden>✕</span> Need overnight lodging</div>
+          <div className="status critical"><span aria-hidden>✕</span> {m.needs.outsideNeed}</div>
         </div>
       </div>
 

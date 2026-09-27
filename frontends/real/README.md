@@ -30,13 +30,13 @@ Useful URLs:
 
 | URL | What it does |
 |---|---|
-| `/` | Opens on Jul 22 at the current clock time (rounded down to :00 or :30) |
+| `/` | Opens on Jul 22 at the current clock time, to the minute |
 | `/?demo=1` | Opens on Jul 22 at 17:00 on tab 1, same every time (use for the pitch) |
 | `/?offline=1` | Hides map tiles, so the map needs no network |
 | `/?data=static` | Exported Databricks snapshots (the default). Missing dates show an error, never mock numbers |
 | `/?data=mock` | Made-up numbers for development, always with the "Mock data" badge |
 
-Keyboard: `←` and `→` step the time by 30 minutes. Keys `1` to `5` switch tabs. `Esc` closes the (i) drawer.
+Time: the dark control in the header has a slider over the day, by the minute, and ‹ › buttons that move one minute. Keyboard: `←` and `→` move one minute; `Shift` + `←` / `→` move 30 minutes. Keys `1` to `5` switch tabs. `Esc` closes the (i) drawer. Getting home (buses) uses the 30-minute dispatch window that contains the selected minute.
 
 UI check: with a server running, `node scripts/ui-check.mjs http://127.0.0.1:8000/ <screenshot-folder>` clicks through all five tabs at 1280×720 with `?demo=1`. It checks that the totals on screen equal the gold totals in `manifest.json`, skips the splash, toggles crossings, switches the weather, opens Jul 22 17:00 and checks that closing SeaBus sizes buses on a North Vancouver route, steps the time past midnight into Jul 23, and checks that ← stops at Jul 22 00:00. It uses the locally installed Chrome or Edge through `playwright-core`.
 
@@ -94,6 +94,15 @@ scripts/export_databricks.py  read-only export with gold checks
 scripts/ui-check.mjs      click-through check at 1280×720
 server.mjs, app.yaml      static server and Databricks Apps config
 ```
+
+## Needs depend on the weather
+
+| Weather | Outside Metro | Metro with every crossing closed | Tab 3 headline | Supplies |
+|---|---|---|---|---|
+| Heat and wildfire smoke | Need a cooling / cleaner-air space | Wait at a cooling space | "Send N people to cooling spaces." | Water (4 L/person/day, Canada.ca), N95 masks (team assumption), cooled floor space. No cots. |
+| Storm, lightning, snow and ice | Need overnight lodging | Stranded, waiting for a crossing | "Send N people to H hubs." | Water, floor space, cots and blankets (overnight lodging only), charging |
+
+In heat and smoke, tab 1 also shows "Heat warning in effect · humidex up to 42°C" under the headline. The wording lives in `src/lib/needs.ts`, and the resource list per hazard in `public/data/external/hazards.json`.
 
 ## How it decides
 

@@ -1,6 +1,7 @@
 // Pure decision logic. No React, no fetch.
 import type { Crossing, DispatchRow, Group, Hub, Origin, Place, PresenceRow, Rate, TransitRoute } from "../data/types";
 import { haversineKm, walkMinutes } from "./geo";
+import { needsFor, type NeedWords } from "./needs";
 
 // ---------- situation ----------
 
@@ -187,6 +188,7 @@ export function alertText(
   crossings: Crossing[],
   closed: ReadonlySet<string>,
   plan: HubPlan,
+  words: NeedWords = needsFor(undefined),
 ): string {
   const present = byOrigin.filter((o) => o.present > 0).map((o) => o.origin);
   const names = (os: Origin[]) => os.map((o) => o.name).sort((a, b) => a.localeCompare(b));
@@ -212,11 +214,11 @@ export function alertText(
   const waitHubs = plan.active.filter((a) => a.waiting > 0).map((a) => a.hub);
   const shut = metro.filter((o) => canGetHome(o, closed) === "waiting");
   if (shut.length && waitHubs.length)
-    lines.push(`If you live in ${list(names(shut))}: crossings are closed. Go to ${hubsText(waitHubs)}.`);
+    lines.push(words.alertClosed(list(names(shut)), hubsText(waitHubs)));
 
   const lodgeHubs = plan.active.filter((a) => a.lodging > 0).map((a) => a.hub);
   if (present.some((o) => o.group === "outside") && lodgeHubs.length)
-    lines.push(`Visiting from outside Metro Vancouver: go to ${hubsText(lodgeHubs)} for overnight shelter.`);
+    lines.push(words.alertOutside(hubsText(lodgeHubs)));
 
   return lines.join("\n");
 }

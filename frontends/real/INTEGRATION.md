@@ -63,6 +63,20 @@ Built by `notebooks/05_dispatch.py`, exported by the same script (`--dispatch-on
 
 Checks: each demand day must have 1,728 rows, and `present` summed per slot must equal gold `total_count`. The transit feed is TransLink's static GTFS (not real-time); feed dates and licence are in `public/data/external/transport.json`.
 
+## Per-minute presence (the time slider)
+
+`python scripts/export_databricks.py --minutes` writes `presence_minute/{date}.json` for the scenario day and the day after (Jul 22 and 23, 2026):
+
+```json
+{ "date": "2026-07-22", "origins": ["Alberta", "…36 labels"], "counts": [[18, 1, 0, …], …] }
+```
+
+- `counts[minute_of_day][origin_index]` holds all 1,440 minutes of `silver_origin_minute`, with actual counts and no suppression.
+- Every minute's total and four bucket counts must equal `gold_activity_minute`, or the export stops.
+- `presence_minute/dates.json` lists the exported days. `manifest.json → minutes` records the gold totals per minute.
+- For those days `StaticAdapter` answers any `"HH:MM"` from these files. Other days still use the 30-minute files. The dispatch export (buses) stays in 30-minute windows.
+- The export reads only; it doesn't touch the 30-minute presence files or the dispatch files.
+
 ## What the app does with missing data
 
 - `StaticAdapter` is the default and **never falls back to mock**. A date that isn't in `dates.json`, or a missing day file, shows a red "No exported snapshot for …" message and no numbers.

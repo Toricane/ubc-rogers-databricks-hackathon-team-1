@@ -5,6 +5,7 @@ import {
   type BusRow, type HubPlan, type Situation, type Stranded, type SupplyRow,
 } from "./lib/logic";
 import type { PresenceRow } from "./data/types";
+import { needsFor, type NeedWords } from "./lib/needs";
 
 export interface CrossingView {
   crossing: Crossing;
@@ -31,6 +32,7 @@ export interface Model {
   supplyRows: SupplyRow[][]; // aligned with plan.active
   totals: ReturnType<typeof supplyTotals>;
   alert: string;
+  needs: NeedWords;
   // Tab 2 buses home. `buses` is null until routes and transport settings load.
   transit: Transit | null;
   transport: Transport | null;
@@ -71,6 +73,7 @@ export function buildModel(args: {
   const st = stranded(sit.byOrigin, closed);
   const plan = assignHubs(ref.site, ref.hubs, st.waiting, st.lodging, maxPerHub);
   const supplyRows = plan.active.map((a) => supplies(a, rates, incident.duration_h, onHand[a.hub.id]));
+  const needs = needsFor(incident.hazard);
   const transit = args.transit ?? null;
   const transport = args.transport ?? null;
   const buses = transit && transport
@@ -86,7 +89,8 @@ export function buildModel(args: {
     plan,
     supplyRows,
     totals: supplyTotals(supplyRows),
-    alert: alertText(sit.byOrigin, ref.crossings, closed, plan),
+    alert: alertText(sit.byOrigin, ref.crossings, closed, plan, needs),
+    needs,
     transit,
     transport,
     dispatchError: args.dispatchError ?? null,

@@ -53,7 +53,11 @@ await page.waitForTimeout(1500);
 // Displayed totals must equal the gold totals recorded by the export.
 const manifest = await (await fetch(new URL("data/internal/manifest.json", base))).json().catch(() => null);
 const shownTotal = async () => Number((await page.locator(".headline .num").first().innerText()).replace(/,/g, ""));
-const goldAt = (date, slot) => manifest?.days?.[date]?.gold_totals?.[slot];
+// Per-minute gold totals from the --minutes export (fall back to the 30-minute export at :00 and :30).
+const goldAt = (date, time) => {
+  const [h, mi] = time.split(":").map(Number);
+  return manifest?.minutes?.days?.[date]?.gold_totals?.[h * 60 + mi] ?? manifest?.days?.[date]?.gold_totals?.[time];
+};
 check(!!manifest, "manifest.json is served");
 check((await page.locator(".source-badge").count()) === 0, "no data-source badge in the header");
 check((await page.title()) === "Cell-Safe", "page title is Cell-Safe");
@@ -66,6 +70,8 @@ check((await page.locator("path.home-circle").count()) > 0, "home-area circles c
 }
 
 check((await page.locator(".tab.active").innerText()).includes("Situation"), "demo opens on tab 1");
+check((await page.locator(".hazard-line").innerText()).includes("Heat warning in effect · humidex up to 42°C"), "heat warning line under the headline");
+check((await page.locator(".group-card", { hasText: "Outside Metro" }).innerText()).includes("Need a cooling / cleaner-air space"), "heat: Outside Metro needs a cooling / cleaner-air space");
 check((await page.locator(".time-step .day").textContent()) === "Wed, Jul 22", "the day is Wed, Jul 22");
 check((await page.locator(".incident-text .name").innerText()).includes("Heat and wildfire smoke"), "weather is heat and smoke");
 
@@ -157,13 +163,25 @@ console.log("--- alert with SeaBus closed ---\n" + alert3 + "\n---");
 await page.keyboard.press("4");
 await page.waitForTimeout(300);
 const heatItems = await page.locator(".totals-card td:first-child").allInnerTexts();
-check(heatItems.includes("N95 masks") && !heatItems.includes("Blankets"), `heat supplies: ${[...new Set(heatItems)].join(", ")}`);
+check(heatItems.includes("N95 masks") && !heatItems.includes("Blankets") && !heatItems.includes("Cots"), `heat supplies (no cots): ${[...new Set(heatItems)].join(", ")}`);
+await page.keyboard.press("3");
+await page.waitForTimeout(300);
+check((await headline()).includes("to cooling spaces"), `heat tab 3 headline: ${await headline()}`);
+await page.keyboard.press("4");
+await page.waitForTimeout(300);
 await page.locator("button", { hasText: "Change weather" }).click();
 await page.locator(".weather-option", { hasText: "Lightning storm" }).click();
 await page.locator("button", { hasText: "Use this weather" }).click();
 await page.waitForTimeout(400);
 const ltItems = await page.locator(".totals-card td:first-child").allInnerTexts();
-check(ltItems.includes("Blankets") && !ltItems.includes("N95 masks"), `lightning supplies: ${[...new Set(ltItems)].join(", ")}`);
+check(ltItems.includes("Blankets") && ltItems.includes("Cots") && !ltItems.includes("N95 masks"), `lightning supplies: ${[...new Set(ltItems)].join(", ")}`);
+await page.keyboard.press("1");
+await page.waitForTimeout(300);
+check((await page.locator(".group-card", { hasText: "Outside Metro" }).innerText()).includes("Need overnight lodging"), "lightning: Outside Metro needs overnight lodging");
+check((await page.locator(".hazard-line").count()) === 0, "no heat warning line for lightning");
+await page.keyboard.press("3");
+await page.waitForTimeout(300);
+check(/Send [\d,]+ people to \d+ hubs?\./.test(await headline()), `lightning tab 3 headline: ${await headline()}`);
 check((await page.locator(".time-step .day").textContent()) === "Wed, Jul 22", "changing weather keeps the day");
 await page.locator("button", { hasText: "Change weather" }).click();
 await page.locator(".weather-option", { hasText: "Heat and wildfire smoke" }).click();
@@ -175,14 +193,33 @@ const t0 = await page.locator(".time-step .time").innerText();
 await page.keyboard.press("1");
 await page.keyboard.press("ArrowRight");
 await page.waitForTimeout(500);
-check((await page.locator(".time-step .time").innerText()) === "17:30", "→ steps the time to 17:30");
-check((await shownTotal()) === goldAt("2026-07-22", "17:30"), `17:30 total matches gold (${goldAt("2026-07-22", "17:30")})`);
-for (let i = 0; i < 14; i++) await page.keyboard.press("ArrowRight");
+check((await page.locator(".time-step .time").innerText()) === "17:01", "→ steps one minute to 17:01");
+check((await shownTotal()) === goldAt("2026-07-22", "17:01"), `17:01 total matches gold minute (${goldAt("2026-07-22", "17:01")})`);
+await page.keyboard.press("ArrowLeft");
+
+// Drag the slider to 20:34 (minute 1234).
+await page.locator(".time-slider input").evaluate((el, v) => {
+  const set = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value").set;
+  set.call(el, String(v));
+  el.dispatchEvent(new Event("input", { bubbles: true }));
+}, 1234);
+await page.waitForTimeout(500);
+check((await page.locator(".time-step .time").innerText()) === "20:34", "slider picks 20:34");
+check((await shownTotal()) === goldAt("2026-07-22", "20:34"), `20:34 total matches gold minute (${goldAt("2026-07-22", "20:34")})`);
+await shot("slider-2034");
+await page.locator(".time-slider input").evaluate((el) => {
+  const set = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value").set;
+  set.call(el, "1020");
+  el.dispatchEvent(new Event("input", { bubbles: true }));
+});
+await page.waitForTimeout(400);
+
+for (let i = 0; i < 15; i++) await page.keyboard.press("Shift+ArrowRight");
 await page.waitForTimeout(600);
 check((await page.locator(".time-step .time").innerText()) === "00:30", "stepping past midnight reaches 00:30");
 check((await page.locator(".time-step .day").textContent()) === "Thu, Jul 23", "the day rolls to Thu, Jul 23");
 check((await shownTotal()) === goldAt("2026-07-23", "00:30"), `Jul 23 00:30 total matches gold (${goldAt("2026-07-23", "00:30")})`);
-for (let i = 0; i < 15; i++) await page.keyboard.press("ArrowLeft");
+for (let i = 0; i < 15; i++) await page.keyboard.press("Shift+ArrowLeft");
 await page.waitForTimeout(600);
 await page.locator(".info-btn").click();
 await page.waitForTimeout(300);
@@ -194,13 +231,13 @@ check(missing.length === 0, `no missing files${missing.length ? ": " + missing.j
 // Time stays inside the scenario day: stepping back stops at Wed, Jul 22 00:00.
 await page.keyboard.press("Escape");
 await page.keyboard.press("1");
-for (let i = 0; i < 40; i++) await page.keyboard.press("ArrowLeft");
+for (let i = 0; i < 40; i++) await page.keyboard.press("Shift+ArrowLeft");
 await page.waitForTimeout(800);
 check(
   (await page.locator(".time-step .day").textContent()) === "Wed, Jul 22" && (await page.locator(".time-step .time").innerText()) === "00:00",
   "← stops at Wed, Jul 22 00:00",
 );
-check(await page.locator('button[aria-label="30 minutes earlier"]').isDisabled(), "earlier button is disabled at the start of the day");
+check(await page.locator('button[aria-label="1 minute earlier"]').isDisabled(), "earlier button is disabled at the start of the day");
 check((await shownTotal()) === goldAt("2026-07-22", "00:00"), `00:00 total matches gold (${goldAt("2026-07-22", "00:00")})`);
 await shot("day-start");
 for (const k of ["1", "2", "3", "4", "5"]) {

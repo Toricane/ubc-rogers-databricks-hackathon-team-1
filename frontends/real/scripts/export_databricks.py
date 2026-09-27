@@ -5,6 +5,8 @@ Read-only. Authenticates through the signed-in Databricks CLI; no token is writt
     python scripts/export_databricks.py                       # pitch dates + dispatch tables
     python scripts/export_databricks.py 2026-08-22 2026-08-23  # specific dates + dispatch tables
     python scripts/export_databricks.py --dispatch-only        # only the dispatch tables
+    python scripts/export_databricks.py --minutes              # per-minute presence for the scenario days
+    python scripts/export_databricks.py --minutes 2026-07-22   # per-minute presence for specific dates
     set DATABRICKS_CLI=C:\\path\\to\\databricks.exe  (if the CLI isn't on PATH)
     set DATABRICKS_CONFIG_PROFILE=workspace1         (CLI profile, default DEFAULT)
 
@@ -13,6 +15,11 @@ from workspace.rogers_waterfront_minute.silver_origin_minute sampled at :00 and 
 Counts are exported as-is (no suppression). Clock strings are kept as recorded.
 Every slot is checked against gold_activity_minute (total and four buckets); the
 export stops if any slot disagrees.
+
+Per-minute presence (--minutes): every minute of the day from the same silver table, written
+compactly to public/data/internal/presence_minute/{date}.json and checked against gold for all
+1,440 minutes (total and four buckets). This feeds the minute slider. It does not touch the
+30-minute presence files or the dispatch export.
 
 Dispatch ("Getting home" tab): gold_route_events, gold_route_demand and gold_route_transit
 (built by notebooks/05_dispatch.py) are written to public/data/internal/dispatch/. Demand
@@ -40,6 +47,7 @@ EVENTS = "workspace.rogers_waterfront_minute.gold_route_events"
 DEMAND = "workspace.rogers_waterfront_minute.gold_route_demand"
 TRANSIT = "workspace.rogers_waterfront_minute.gold_route_transit"
 EXTERNAL = OUT.parent / "external"
+MINUTE_DATES = ["2026-07-22", "2026-07-23"]  # the scenario day ("today") and the day after
 
 _token = None
 
@@ -164,6 +172,95 @@ ORDER BY origin, trips_per_hour_pm DESC
 """
 
 
+MINUTE_SILVER_SQL = f"""
+SELECT (hour(minute_timestamp_local) * 60 + minute(minute_timestamp_local)) AS m, origin, origin_bucket, active_count, source_version
+FROM {SILVER}
+WHERE location_name = :loc
+  AND minute_timestamp_local >= to_timestamp_ntz(:d)
+  AND minute_timestamp_local <  to_timestamp_ntz(:d) + INTERVAL 1 DAY
+"""
+
+MINUTE_GOLD_SQL = f"""
+SELECT (hour(minute_timestamp_local) * 60 + minute(minute_timestamp_local)) AS m, total_count,
+  local_waterfront_count, vancouver_city_count, metro_vancouver_count, outside_metro_vancouver_count
+FROM {GOLD}
+WHERE location_name = :loc
+  AND minute_timestamp_local >= to_timestamp_ntz(:d)
+  AND minute_timestamp_local <  to_timestamp_ntz(:d) + INTERVAL 1 DAY
+"""
+
+
+def export_minutes(day: str) -> dict:
+    """Write presence_minute/{day}.json: counts[minute_of_day][origin_index], checked against gold every minute."""
+    params = [{"name": "loc", "value": LOCATION}, {"name": "d", "value": day}]
+    silver = sql(MINUTE_SILVER_SQL, params)
+    gold = {int(r[0]): [int(x) for x in r[1:]] for r in sql(MINUTE_GOLD_SQL, params)}
+
+    origins = sorted({r[1] for r in silver})
+    index = {o: i for i, o in enumerate(origins)}
+    counts = [[None] * len(origins) for _ in range(1440)]
+    sums = [[0] * 5 for _ in range(1440)]
+    versions = set()
+    for m, origin, bucket, count, version in silver:
+        m, n = int(m), int(count)
+        counts[m][index[origin]] = n
+        sums[m][0] += n
+        sums[m][1 + BUCKETS.index(bucket)] += n
+        versions.add(int(version))
+
+    problems = []
+    if len(origins) != 36:
+        problems.append(f"{len(origins)} origins, expected 36")
+    if len(silver) != 1440 * 36:
+        problems.append(f"{len(silver)} rows, expected {1440 * 36}")
+    missing = sum(1 for row in counts for v in row if v is None)
+    if missing:
+        problems.append(f"{missing} empty cells")
+    bad = [m for m in range(1440) if gold.get(m) != sums[m]]
+    if bad:
+        problems.append(f"{len(bad)} minutes disagree with gold, first at minute {bad[0]}: silver {sums[bad[0]]} != gold {gold.get(bad[0])}")
+    if problems:
+        raise SystemExit(f"{day}: minute export failed checks:\n  " + "\n  ".join(problems))
+
+    out = OUT / "presence_minute"
+    out.mkdir(parents=True, exist_ok=True)
+    with open(out / f"{day}.json", "w", encoding="utf-8", newline="\n") as f:
+        json.dump({"date": day, "origins": origins, "counts": counts}, f, ensure_ascii=False, separators=(",", ":"))
+    peak = max(range(1440), key=lambda m: sums[m][0])
+    return {
+        "date": day, "minutes": 1440, "origins": len(origins), "source_version": sorted(versions),
+        "gold_check": "all 1,440 minutes match gold total_count and the four bucket counts",
+        "gold_totals": [sums[m][0] for m in range(1440)],
+        "peak_minute": f"{peak // 60:02d}:{peak % 60:02d}", "peak_total": sums[peak][0],
+    }
+
+
+def main_minutes(days: list[str]):
+    results = []
+    for d in days:
+        r = export_minutes(d)
+        print(f"{d}: 1440 minutes x {r['origins']} origins, gold check OK, peak {r['peak_total']} at {r['peak_minute']}")
+        results.append(r)
+    out = OUT / "presence_minute"
+    present = sorted(p.stem for p in out.glob("????-??-??.json"))
+    with open(out / "dates.json", "w", encoding="utf-8", newline="\n") as f:
+        json.dump(present, f)
+    manifest_path = OUT / "manifest.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8")) if manifest_path.exists() else {}
+    old = manifest.get("minutes", {}).get("days", {})
+    manifest["minutes"] = {
+        "table": SILVER, "check_table": GOLD,
+        "metric": "Simultaneous active attachment sessions at every minute (start <= t <= start + dwell_time).",
+        "exported_at_utc": dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "dates": present,
+        "days": {**old, **{r["date"]: r for r in results}},
+    }
+    with open(manifest_path, "w", encoding="utf-8", newline="\n") as f:
+        json.dump(manifest, f, ensure_ascii=False, indent=2)
+        f.write("\n")
+    print(f"presence_minute/dates.json: {present}")
+
+
 def export_dispatch() -> dict:
     """Write dispatch/{date}.json, dispatch/transit.json and dispatch/dates.json from the dispatch tables."""
     out = OUT / "dispatch"
@@ -218,6 +315,12 @@ def export_dispatch() -> dict:
 
 def main():
     args = sys.argv[1:]
+    if "--minutes" in args:
+        days = [a for a in args if not a.startswith("--")] or MINUTE_DATES
+        for d in days:
+            dt.date.fromisoformat(d)
+        main_minutes(days)
+        return
     dispatch_only = "--dispatch-only" in args
     days = [a for a in args if not a.startswith("--")] or PITCH_DATES
     for d in days:

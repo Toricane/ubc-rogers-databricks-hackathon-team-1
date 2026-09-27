@@ -27,10 +27,7 @@ export function SendPeopleTab({
         {st.total === 0 ? (
           "No one needs a hub right now."
         ) : (
-          <>
-            Send <span className="num">{fmt(st.total)}</span> people to <span className="num">{active.length}</span>{" "}
-            {active.length === 1 ? "hub" : "hubs"}.
-          </>
+          m.needs.sendHeadline(fmt(st.total), active.length)
         )}
       </h1>
 
@@ -111,8 +108,8 @@ export function SendPeopleTab({
                 <tr>
                   <th>Hub</th>
                   <th className="r">Walk</th>
-                  <th className="r">Waiting for a crossing</th>
-                  <th className="r">Overnight lodging</th>
+                  <th className="r">{m.needs.waitingColumn}</th>
+                  <th className="r">{m.needs.lodgingColumn}</th>
                   <th className="r">Total</th>
                 </tr>
               </thead>

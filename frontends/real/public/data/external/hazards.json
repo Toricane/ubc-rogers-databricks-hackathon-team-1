@@ -24,11 +24,10 @@
       "resources": [
         "water",
         "n95",
-        "cooled_floor_space",
-        "cots"
+        "cooled_floor_space"
       ],
       "source": "team_assumption",
-      "note": "Cots apply to lodging counts only, so they appear only when lodging > 0."
+      "note": "Heat and smoke need a cooling / cleaner-air space during the day, not overnight lodging, so no cots."
     },
     {
       "id": "lightning",

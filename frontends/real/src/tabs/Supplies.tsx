@@ -66,7 +66,7 @@ export function SuppliesTab({
                 <div className="card-title">{a.hub.name}</div>
                 <div className="muted small">
                   {a.hub.address} · <span className="num">{fmt(a.total)}</span> people
-                  {a.lodging > 0 && <> (<span className="num">{fmt(a.lodging)}</span> overnight)</>}
+                  {a.lodging > 0 && <> (<span className="num">{fmt(a.lodging)}</span> {m.needs.lodgingNote})</>}
                 </div>
                 <table className="table compact">
                   <thead>

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { createAdapter, StaticAdapter, type SnapshotManifest } from "./data/adapter";
 import type { CrossingStatus, DispatchRow, Hazard, HazardId, Incident, PresenceRow, Rate, Reference, Transit, Transport } from "./data/types";
 import { lastFetchSource } from "./lib/drivebc";
-import { SLOT_MIN, addDays, fromMin, shortDate, stepSlot, weekday } from "./lib/time";
+import { SLOT_MIN, addDays, fromMin, shortDate, stepBy, toMin, weekday } from "./lib/time";
 import { buildModel, fmt } from "./model";
 import { ChangeDialog } from "./components/ChangeDialog";
 import { InfoDrawer } from "./components/InfoDrawer";
@@ -34,10 +34,15 @@ const SCENARIO_NEXT_DATE = addDays(SCENARIO_DATE, 1);
 const SCENARIO_INCIDENT = "jul22";
 const DEMO_SLOT = "17:00";
 
-/** Current wall-clock time, rounded down to the 30-minute slot. */
-function nowSlot(): string {
+/** Current wall-clock time to the minute. */
+function nowMinute(): string {
   const d = new Date();
-  const m = d.getHours() * 60 + d.getMinutes();
+  return fromMin(d.getHours() * 60 + d.getMinutes());
+}
+
+/** Dispatch (buses home) is exported in 30-minute windows; use the one that contains the minute. */
+function windowStart(time: string): string {
+  const m = toMin(time);
   return fromMin(m - (m % SLOT_MIN));
 }
 
@@ -102,7 +107,7 @@ export default function App() {
         setMock(adapter.isMock());
         if (adapter instanceof StaticAdapter) adapter.getManifest().then(setManifest);
         const sourced = inc.find((i) => i.id === SCENARIO_INCIDENT);
-        openIncident(scenarioIncident(sourced?.hazard ?? "heat_smoke", hz, sourced), DEMO ? DEMO_SLOT : nowSlot());
+        openIncident(scenarioIncident(sourced?.hazard ?? "heat_smoke", hz, sourced), DEMO ? DEMO_SLOT : nowMinute());
       })
       .catch((e) => setError(String(e)));
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -151,12 +156,13 @@ export default function App() {
       .catch((e) => setBusSetupError(e instanceof Error ? e.message : String(e)));
   }, [adapter]);
 
-  // Departures for tab 2 at the current date and slot. Missing dates are an error, never mock numbers.
+  // Departures for tab 2 in the 30-minute window containing the selected minute. Missing dates are an error.
+  const dispatchSlot = slot ? windowStart(slot) : "";
   useEffect(() => {
-    if (!date || !slot) return;
+    if (!date || !dispatchSlot) return;
     let stale = false;
     adapter
-      .getDispatch(date, slot)
+      .getDispatch(date, dispatchSlot)
       .then((d) => {
         if (stale) return;
         setDispatch(d);
@@ -170,7 +176,7 @@ export default function App() {
     return () => {
       stale = true;
     };
-  }, [adapter, date, slot]);
+  }, [adapter, date, dispatchSlot]);
 
   // Rates and crossing status for the incident.
   useEffect(() => {
@@ -197,20 +203,18 @@ export default function App() {
     }
   };
 
-  // Time stays within the scenario day and the early hours after it.
-  const canStep = (dir: 1 | -1) => {
-    if (!date) return false;
-    const next = stepSlot(date, slot, dir);
-    return next.date === SCENARIO_DATE || next.date === SCENARIO_NEXT_DATE;
-  };
+  // Time moves by the minute and stays within the scenario day and the day after it.
+  const inRange = (d: string) => d === SCENARIO_DATE || d === SCENARIO_NEXT_DATE;
+  const canStep = (minutes: number) => !!date && inRange(stepBy(date, slot, minutes).date);
   const step = useCallback(
-    (dir: 1 | -1) => {
+    (minutes: number) => {
       if (!date) return;
-      const next = stepSlot(date, slot, dir);
-      if (next.date !== SCENARIO_DATE && next.date !== SCENARIO_NEXT_DATE) return;
+      const next = stepBy(date, slot, minutes);
+      if (!inRange(next.date)) return;
       setDate(next.date);
       setSlot(next.slot);
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [date, slot],
   );
 
@@ -228,13 +232,13 @@ export default function App() {
   const setOnHand = (hubId: string, resId: string, v: number | undefined) =>
     setOnHandState((s) => ({ ...s, [hubId]: { ...s[hubId], [resId]: v } }));
 
-  // Keyboard: ←/→ step time, 1–5 switch tabs.
+  // Keyboard: ←/→ one minute (Shift: 30 minutes), 1–5 switch tabs.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const t = e.target as HTMLElement;
       if (splash || t.closest("input, textarea, select, dialog") || e.metaKey || e.ctrlKey || e.altKey) return;
-      if (e.key === "ArrowLeft") step(-1);
-      else if (e.key === "ArrowRight") step(1);
+      if (e.key === "ArrowLeft") step(e.shiftKey ? -SLOT_MIN : -1);
+      else if (e.key === "ArrowRight") step(e.shiftKey ? SLOT_MIN : 1);
       else if (/^[1-5]$/.test(e.key)) setTab(Number(e.key) as TabId);
       else if (e.key === "Escape") setDrawerOpen(false);
       else return;
@@ -286,17 +290,34 @@ export default function App() {
           <span className="muted">Loading…</span>
         )}
         <span className="spacer" />
-        <div className="time-step" title="Use the ← and → keys to move 30 minutes">
-          <button className="step-btn" aria-label="30 minutes earlier" onClick={() => step(-1)} disabled={!incident || !canStep(-1)}>
-            <span aria-hidden>‹</span> 30 min
+        <div className="time-step" title="Drag to pick a minute. ← → move 1 minute; Shift + ← → move 30 minutes.">
+          <button className="step-btn" aria-label="1 minute earlier" onClick={() => step(-1)} disabled={!incident || !canStep(-1)}>
+            <span aria-hidden>‹</span>
           </button>
           <div className="time-now">
             <span className="num time">{slot || "--:--"}</span>
             <span className="day">{dayLabel}</span>
           </div>
-          <button className="step-btn" aria-label="30 minutes later" onClick={() => step(1)} disabled={!incident || !canStep(1)}>
-            30 min <span aria-hidden>›</span>
+          <button className="step-btn" aria-label="1 minute later" onClick={() => step(1)} disabled={!incident || !canStep(1)}>
+            <span aria-hidden>›</span>
           </button>
+          <div className="time-slider">
+            <input
+              type="range"
+              min={0}
+              max={1439}
+              step={1}
+              value={slot ? toMin(slot) : 0}
+              disabled={!incident}
+              aria-label="Time of day, by the minute"
+              aria-valuetext={`${slot} ${dayLabel}`}
+              onChange={(e) => setSlot(fromMin(Number(e.target.value)))}
+              style={{ ["--pct" as string]: `${((slot ? toMin(slot) : 0) / 1439) * 100}%` }}
+            />
+            <div className="ticks" aria-hidden>
+              <span>00</span><span>06</span><span>12</span><span>18</span><span>24</span>
+            </div>
+          </div>
         </div>
         {mock && <span className="mock-badge">Mock data</span>}
       </header>

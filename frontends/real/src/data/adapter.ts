@@ -3,6 +3,7 @@
 import type { DispatchRow, CellSafeData, HazardId, PresenceRow, Transit } from "./types";
 import { loadCrossingStatus, loadHazards, loadIncidents, loadRates, loadReference, loadTransport } from "./external";
 import { mockDates, mockPresence } from "./mock";
+import { toMin } from "../lib/time";
 
 export type { CellSafeData } from "./types";
 
@@ -69,7 +70,30 @@ export class StaticAdapter extends ExternalBase implements CellSafeData {
     return this.manifest;
   }
 
-  async getPresence(date: string, slot: string): Promise<PresenceRow[]> {
+  private minuteDates: Promise<string[]> | null = null;
+  private minuteDays = new Map<string, Promise<MinuteFile | null>>();
+
+  getMinuteDates() {
+    this.minuteDates ??= tryJson<string[]>(`${INTERNAL}presence_minute/dates.json`).then((d) => (Array.isArray(d) ? d : []));
+    return this.minuteDates;
+  }
+
+  /** `time` is any "HH:MM". Per-minute files are used when exported; otherwise only :00 and :30 exist. */
+  async getPresence(date: string, time: string): Promise<PresenceRow[]> {
+    if ((await this.getMinuteDates()).includes(date)) {
+      if (!this.minuteDays.has(date)) this.minuteDays.set(date, tryJson(`${INTERNAL}presence_minute/${date}.json`));
+      const file = await this.minuteDays.get(date)!;
+      if (!file || !Array.isArray(file.counts) || file.counts.length !== 1440) {
+        this.minuteDays.delete(date);
+        throw new MissingSnapshotError(date);
+      }
+      const row = file.counts[toMin(time)];
+      return file.origins.map((origin, i) => ({ origin, present: row[i] }));
+    }
+    return this.getHalfHourPresence(date, time);
+  }
+
+  private async getHalfHourPresence(date: string, slot: string): Promise<PresenceRow[]> {
     const dates = await this.getDates();
     if (!dates.includes(date)) throw new MissingSnapshotError(date);
     if (!this.days.has(date)) this.days.set(date, tryJson(`${INTERNAL}presence/${date}.json`));
@@ -116,6 +140,12 @@ export class StaticAdapter extends ExternalBase implements CellSafeData {
     });
     return this.transit;
   }
+}
+
+interface MinuteFile {
+  date: string;
+  origins: string[];
+  counts: (number | null)[][]; // [minute_of_day][origin index]
 }
 
 export class MissingDispatchError extends Error {
