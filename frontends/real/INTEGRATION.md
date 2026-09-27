@@ -51,6 +51,18 @@ For each date the script:
 
 Current export: 2025-12-17, 2025-12-18, 2026-07-22, 2026-07-23, 2026-08-22 and 2026-08-23. Each is the date of a preset incident or the day after, so the time selector can step past midnight. All passed the gold check.
 
+## Dispatch data ("Getting home" tab)
+
+Built by `notebooks/05_dispatch.py`, exported by the same script (`--dispatch-only` skips the presence days).
+
+| Table | File | Shape |
+|---|---|---|
+| `gold_route_events` | `dispatch/dates.json` | Event dates plus the day after each, e.g. `["2026-07-22","2026-07-23"]` |
+| `gold_route_demand` | `dispatch/{date}.json` | `[{ "slot_start": "17:00", "origin": "Surrey", "present": 412, "departing_30m": 150 }, …]`, 1,728 rows. `departing_30m` = sessions that end in `[slot, slot + 30 min)` |
+| `gold_route_transit` | `dispatch/transit.json` | `{ "feed": {version, start, end, url}, "routes": [{ origin, crossing_id, route_short_name, route_long_name, mode, board, alight, one_way_min, trips_per_hour_pm, shape }] }` |
+
+Checks: each demand day must have 1,728 rows, and `present` summed per slot must equal gold `total_count`. The transit feed is TransLink's static GTFS (not real-time); feed dates and licence are in `public/data/external/transport.json`.
+
 ## What the app does with missing data
 
 - `StaticAdapter` is the default and **never falls back to mock**. A date that isn't in `dates.json`, or a missing day file, shows a red "No exported snapshot for …" message and no numbers.

@@ -10,7 +10,7 @@
   "clock": "minute_timestamp_local as recorded; assumed Vancouver local, not confirmed. Not shifted.",
   "counts": "Actual active_count values. No suppression. Sessions, not verified unique people.",
   "source_period": "2025-11-01 to 2026-08-31",
-  "exported_at_utc": "2026-09-27T02:04:35Z",
+  "exported_at_utc": "2026-09-27T03:40:45Z",
   "dates": [
     "2025-12-17",
     "2025-12-18",
@@ -391,6 +391,39 @@
       },
       "peak_slot": "16:30",
       "peak_total": 1732
+    }
+  },
+  "dispatch": {
+    "tables": {
+      "events": "workspace.rogers_waterfront_minute.gold_route_events",
+      "demand": "workspace.rogers_waterfront_minute.gold_route_demand",
+      "transit": "workspace.rogers_waterfront_minute.gold_route_transit"
+    },
+    "events": [
+      "jul22"
+    ],
+    "dates": [
+      "2026-07-22",
+      "2026-07-23"
+    ],
+    "days": {
+      "2026-07-22": {
+        "rows": 1728,
+        "departing_total": 35605,
+        "gold_check": "present matches gold total_count in all 48 slots"
+      },
+      "2026-07-23": {
+        "rows": 1728,
+        "departing_total": 48695,
+        "gold_check": "present matches gold total_count in all 48 slots"
+      }
+    },
+    "routes": 15,
+    "feed": {
+      "version": "26SEP_20260925",
+      "start": "2026-09-07",
+      "end": "2027-01-03",
+      "url": "https://gtfs-static.translink.ca/gtfs/google_transit.zip"
     }
   }
 }
