@@ -19,12 +19,12 @@ export function SituationTab({ m, offline }: { m: Model; offline: boolean }) {
 
       <div className="group-cards">
         <div className="card group-card g-vancouver">
-          <div className="card-title">Vancouver</div>
+          <div className="card-title"><span className="dot g-vancouver" />Vancouver</div>
           <div className="big num">{fmt(sit.byGroup.vancouver)}</div>
           <div className="status ok"><span aria-hidden>✓</span> Go home: no bridge or crossing needed</div>
         </div>
         <div className="card group-card g-metro">
-          <div className="card-title">Metro</div>
+          <div className="card-title"><span className="dot g-metro" />Metro</div>
           <div className="big num">{fmt(sit.byGroup.metro)}</div>
           <div className="status-line">
             <span className="status ok"><span aria-hidden>✓</span> <span className="num">{fmt(st.metroHome)}</span> can get home</span>
@@ -32,7 +32,7 @@ export function SituationTab({ m, offline }: { m: Model; offline: boolean }) {
           </div>
         </div>
         <div className="card group-card g-outside">
-          <div className="card-title">Outside Metro</div>
+          <div className="card-title"><span className="dot g-outside" />Outside Metro</div>
           <div className="big num">{fmt(sit.byGroup.outside)}</div>
           <div className="status critical"><span aria-hidden>✕</span> Need overnight lodging</div>
         </div>
@@ -69,7 +69,7 @@ export function SituationTab({ m, offline }: { m: Model; offline: boolean }) {
         </MapFrame>
 
         <div className="card side-list g-outside">
-          <div className="card-title">Outside Metro: top home areas</div>
+          <div className="card-title"><span className="dot g-outside" />Outside Metro: top home areas</div>
           {outside.length === 0 && <p className="muted">No one from outside Metro right now.</p>}
           <ol className="rank">
             {outside.map(({ origin, present }) => (

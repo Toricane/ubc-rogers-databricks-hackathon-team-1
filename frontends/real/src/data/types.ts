@@ -80,7 +80,7 @@ export interface CrossingStatus {
   detail?: string; // e.g. DriveBC headline
 }
 
-export interface FiveBarsData {
+export interface CellSafeData {
   readonly kind: "mock" | "static" | "databricks";
   isMock(): boolean;
   getDates(): Promise<string[]>; // INTERNAL
