@@ -8,6 +8,7 @@ import { ChangeDialog } from "./components/ChangeDialog";
 import { InfoDrawer } from "./components/InfoDrawer";
 import { LogoMark, Wordmark } from "./components/Logo";
 import { Splash } from "./components/Splash";
+import { ThemeToggle } from "./components/ThemeToggle";
 import { SituationTab } from "./tabs/Situation";
 import { GettingHomeTab } from "./tabs/GettingHome";
 import { SendPeopleTab } from "./tabs/SendPeople";
@@ -320,6 +321,7 @@ export default function App() {
           </div>
         </div>
         {mock && <span className="mock-badge">Mock data</span>}
+        <ThemeToggle />
       </header>
 
       <nav className="tabs" role="tablist">
@@ -333,7 +335,7 @@ export default function App() {
               className={`tab${t.id === tab ? " active" : ""}`}
               onClick={() => setTab(t.id)}
             >
-              <span className="tab-key num">{t.id}</span> {t.label}
+              {t.label}
               {b !== null && <span className="badge">{fmt(b)}</span>}
             </button>
           );

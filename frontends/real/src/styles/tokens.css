@@ -1,57 +1,134 @@
+/* Cell-Safe design tokens.
+   Two accents only: Rogers-inspired red (action, not official brand colour) and a neutral ink.
+   Light is the default; dark follows the system unless the user picks a theme (data-theme on <html>). */
 :root {
-  /* Brand — inspired by Rogers/Databricks red; not official brand colours.
-     Used as an accent only: logo, active tab, primary buttons, Waterfront pin. */
-  --brand: #D92D20;
-  --brand-dark: #B42318;
-  --brand-tint: #FEF3F2;
-  --brand-soft: #FDA29B;
-
-  /* Neutrals (cool, clean) */
-  --bg: #F5F6F8;
-  --surface: #FFFFFF;
-  --surface-2: #F9FAFB;
-  --border: #FDA29B;       /* all dividers and control outlines: soft red */
-  --line-strong: #D92D20;  /* outlines of cards, maps, header and tab bar */
-  --line-soft: #FECDCA;    /* table row separators */
-  --text: #101828;
-  --muted: #667085;
+  --brand: #DA291C;
+  --brand-dark: #B3221A;
+  --brand-tint: #FDF1F0;
   --on-brand: #FFFFFF;
-  --unused: #98A2B3;
-  --scrim: rgba(16, 24, 40, .45);
-  --scrim-light: rgba(16, 24, 40, .30);
-  --on-dark-hover: rgba(255, 255, 255, .12);
-  --on-dark-line: rgba(255, 255, 255, .15);
 
-  /* Status — always paired with an icon and a word */
+  --bg: #FFFFFF;
+  --surface: #FFFFFF;
+  --surface-2: #F6F6F7;
+  --border: #E4E4E7;
+  --border-strong: #D1D1D6;
+  --text: #111113;
+  --muted: #5F5F66;
+  --subtle: #8E8E95;
+  --bar: #B8B8BE;
+  --unused: #8E8E95;
+  --scrim: rgba(17, 17, 19, .40);
+  --scrim-light: rgba(17, 17, 19, .24);
+
+  /* Map-only status colours (the map keeps its look) */
   --critical: #9E0B1F;
   --ok: #079455;
-
-  /* Groups */
   --g-vancouver: #0E9384;
   --g-metro: #7A5AF8;
   --g-outside: #F79009;
+  /* KPI numbers use the map colours; the orange is deepened slightly for text contrast on white */
+  --g-vancouver-text: #0E9384;
+  --g-metro-text: #7A5AF8;
+  --g-outside-text: #DC6803;
 
-  /* Type */
-  --font-ui: "Inter", system-ui, sans-serif;
-  --font-num: "IBM Plex Mono", ui-monospace, monospace;
-  --fs-headline: 26px;
-  --fs-card-num: 36px;
+  /* One family: Inter. Numbers use tabular figures. */
+  --font-ui: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-num: var(--font-ui);
+  --fs-headline: 24px;
+  --fs-stat: 32px;
+  --fs-card-num: 32px;
   --fs-body: 14px;
   --fs-small: 12px;
 
-  /* Shape */
-  --r-card: 10px;
-  --r-control: 8px;
-  --edge: 4px;
-  --shadow-card: 0 1px 2px rgba(217, 45, 32, .08), 0 4px 12px rgba(217, 45, 32, .08);
+  --r-card: 6px;
+  --r-control: 4px;
+  --shadow-card: 0 1px 2px rgba(17, 17, 19, .04);
 
-  /* Motion */
   --t-fast: 150ms;
 
-  /* Spacing */
+  /* 8px grid (4px half-step for hairline adjustments) */
   --s1: 4px;
+  --s2: 8px;
+  --s3: 16px;
+  --s4: 16px;
+  --s5: 24px;
+  --s6: 32px;
+
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --brand: #F0443A;
+    --brand-dark: #FF7A70;
+    --brand-tint: rgba(240, 68, 58, .14);
+    --bg: #0E0E10;
+    --surface: #151517;
+    --surface-2: #1C1C1F;
+    --border: #2A2A2F;
+    --border-strong: #3A3A40;
+    --text: #F4F4F5;
+    --muted: #A1A1AA;
+    --subtle: #71717A;
+    --bar: #52525B;
+    --unused: #71717A;
+    --scrim: rgba(0, 0, 0, .6);
+    --scrim-light: rgba(0, 0, 0, .45);
+    --shadow-card: none;
+    --g-vancouver-text: #2ED3B7;
+    --g-metro-text: #A48AFB;
+    --g-outside-text: #FDB022;
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme="dark"] {
+  --brand: #F0443A;
+  --brand-dark: #FF7A70;
+  --brand-tint: rgba(240, 68, 58, .14);
+  --bg: #0E0E10;
+  --surface: #151517;
+  --surface-2: #1C1C1F;
+  --border: #2A2A2F;
+  --border-strong: #3A3A40;
+  --text: #F4F4F5;
+  --muted: #A1A1AA;
+  --subtle: #71717A;
+  --bar: #52525B;
+  --unused: #71717A;
+  --scrim: rgba(0, 0, 0, .6);
+  --scrim-light: rgba(0, 0, 0, .45);
+  --shadow-card: none;
+  --g-vancouver-text: #2ED3B7;
+  --g-metro-text: #A48AFB;
+  --g-outside-text: #FDB022;
+  color-scheme: dark;
+}
+
+/* The splash and the map keep their exact current look in both themes. */
+.splash {
+  --brand: #D92D20;
+  --surface: #FFFFFF;
+  --text: #101828;
+  --muted: #667085;
+  --unused: #98A2B3;
+  --border: #FDA29B;
   --s2: 8px;
   --s3: 12px;
   --s4: 16px;
   --s5: 24px;
+  --fs-small: 12px;
 }
+.map-wrap, .legend {
+  --brand: #D92D20;
+  --brand-dark: #B42318;
+  --surface: #FFFFFF;
+  --text: #101828;
+  --muted: #667085;
+  --unused: #98A2B3;
+  --border: #E4E7EC;
+  --bg: #F5F6F8;
+  --s3: 12px;
+  --shadow-card: 0 1px 2px rgba(16, 24, 40, .06);
+}
+.map-wrap, .legend { color: var(--text); }

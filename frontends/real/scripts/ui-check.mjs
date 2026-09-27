@@ -70,8 +70,47 @@ check((await page.locator("path.home-circle").count()) > 0, "home-area circles c
 }
 
 check((await page.locator(".tab.active").innerText()).includes("Situation"), "demo opens on tab 1");
-check((await page.locator(".hazard-line").innerText()).includes("Heat warning in effect · humidex up to 42°C"), "heat warning line under the headline");
-check((await page.locator(".group-card", { hasText: "Outside Metro" }).innerText()).includes("Need a cooling / cleaner-air space"), "heat: Outside Metro needs a cooling / cleaner-air space");
+// Zoom buttons: + and − on the map, and the map opens zoomed in on Waterfront.
+{
+  check(await page.locator(".leaflet-control-zoom-in").isVisible() && await page.locator(".leaflet-control-zoom-out").isVisible(), "map shows + and − zoom buttons");
+  const scaleOf = () => page.locator(".leaflet-tile-pane .leaflet-layer > .leaflet-tile-container").last().evaluate((el) => el.style.transform || "").catch(() => "");
+  const tilesBefore = await page.locator(".leaflet-tile").first().getAttribute("src").catch(() => null);
+  await page.locator(".leaflet-control-zoom-in").click();
+  await page.waitForTimeout(700);
+  const tilesAfter = await page.locator(".leaflet-tile").first().getAttribute("src").catch(() => null);
+  check(tilesBefore === null || tilesAfter !== tilesBefore, "clicking + zooms the map in");
+  await page.locator(".leaflet-control-zoom-out").click();
+  await page.waitForTimeout(700);
+  const wf = await page.locator(".wf-icon").first().boundingBox();
+  const mb = await page.locator(".map-wrap").first().boundingBox();
+  const cx = mb.x + mb.width / 2, cy = mb.y + mb.height / 2;
+  check(Math.abs(wf.x + wf.width / 2 - cx) < 40 && Math.abs(wf.y + wf.height / 2 - cy) < 40, "map opens centred on Waterfront");
+}
+
+// Hovering a KPI highlights that group on the map.
+{
+  const fillOf = (sel) => page.locator(sel).first().evaluate((el) => Number(getComputedStyle(el).fillOpacity));
+  await page.locator(".stat-metro").hover();
+  await page.waitForTimeout(300);
+  check((await page.locator(".map-wrap").getAttribute("data-focus")) === "metro", "hovering Metro focuses the map on Metro");
+  const metroOn = await fillOf("path.home-circle.g-metro");
+  const vanOff = await fillOf("path.home-circle.g-vancouver");
+  check(metroOn > 0.8 && vanOff < 0.3, `Metro circles stand out (${metroOn}) and Vancouver fades (${vanOff})`);
+  await shot("hover-metro");
+  await page.locator(".stat-outside").hover();
+  await page.waitForTimeout(300);
+  check(await page.locator(".region-panel.is-focus").count() === 1, "hovering Outside Metro highlights the region table");
+  await page.mouse.move(640, 690);
+  await page.waitForTimeout(300);
+  check((await page.locator(".map-wrap").getAttribute("data-focus")) === null, "moving away clears the highlight");
+  const colour = await page.locator(".stat-vancouver .stat-value").evaluate((el) => getComputedStyle(el).color);
+  check(colour !== "rgb(17, 17, 19)", `Vancouver number is coloured (${colour})`);
+}
+{
+  const bar = (await page.locator(".alert-bar").textContent()) ?? "";
+  check(bar.includes("Heat warning in effect") && bar.includes("humidex up to 42°C"), `heat warning bar under the headline: ${bar}`);
+}
+check((await page.locator(".group-card", { hasText: "Outside Metro" }).innerText()).toLowerCase().includes("need a cooling / cleaner-air space"), "heat: Outside Metro needs a cooling / cleaner-air space");
 check((await page.locator(".time-step .day").textContent()) === "Wed, Jul 22", "the day is Wed, Jul 22");
 check((await page.locator(".incident-text .name").innerText()).includes("Heat and wildfire smoke"), "weather is heat and smoke");
 
@@ -87,7 +126,7 @@ for (const k of ["1", "2", "3", "4", "5"]) {
 }
 await page.keyboard.press("1");
 await page.waitForTimeout(300);
-before.tab1 = await page.locator(".group-card.g-metro").innerText();
+before.tab1 = await page.locator(".group-card").nth(1).innerText();
 
 // Toggle Lions Gate and Ironworkers closed on tab 2 (Getting home).
 await page.keyboard.press("2");
@@ -110,7 +149,7 @@ console.log("note: SeaBus is still open, so North Shore residents can still get 
 
 await page.keyboard.press("1");
 await page.waitForTimeout(400);
-const tab1 = await page.locator(".group-card.g-metro").innerText();
+const tab1 = await page.locator(".group-card").nth(1).innerText();
 console.log("tab 1 metro card:", tab1.replace(/\n/g, " "));
 await shot("tab1-after");
 
@@ -142,7 +181,7 @@ console.log("badges with SeaBus also closed:", b3.join(" | "));
 check(b3[2] !== after.badges[2], "tab 3 badge (stranded) changed once the North Shore has no way home");
 await page.keyboard.press("1");
 await page.waitForTimeout(300);
-const tab1b = await page.locator(".group-card.g-metro").innerText();
+const tab1b = await page.locator(".group-card").nth(1).innerText();
 check(tab1b !== before.tab1, `tab 1 metro card updated: ${tab1b.replace(/\n/g, " ")}`);
 await shot("tab1-seabus");
 await page.keyboard.press("3");
@@ -177,8 +216,8 @@ const ltItems = await page.locator(".totals-card td:first-child").allInnerTexts(
 check(ltItems.includes("Blankets") && ltItems.includes("Cots") && !ltItems.includes("N95 masks"), `lightning supplies: ${[...new Set(ltItems)].join(", ")}`);
 await page.keyboard.press("1");
 await page.waitForTimeout(300);
-check((await page.locator(".group-card", { hasText: "Outside Metro" }).innerText()).includes("Need overnight lodging"), "lightning: Outside Metro needs overnight lodging");
-check((await page.locator(".hazard-line").count()) === 0, "no heat warning line for lightning");
+check((await page.locator(".group-card", { hasText: "Outside Metro" }).innerText()).toLowerCase().includes("need overnight lodging"), "lightning: Outside Metro needs overnight lodging");
+check((await page.locator(".alert-bar").count()) === 0, "no heat warning bar for lightning");
 await page.keyboard.press("3");
 await page.waitForTimeout(300);
 check(/Send [\d,]+ people to \d+ hubs?\./.test(await headline()), `lightning tab 3 headline: ${await headline()}`);

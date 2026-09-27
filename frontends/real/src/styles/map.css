@@ -214,3 +214,23 @@
 .route-chip s { color: var(--unused); }
 .route-chip.closed { text-decoration: none; }
 .route-chip.up { top: -34px; }
+
+/* Zoom buttons: small, plain, top-right (legend is bottom-left). */
+.map-wrap .leaflet-control-zoom {
+  border: 1px solid var(--border);
+  border-radius: var(--r-control);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+  margin: var(--s2) var(--s2) 0 0;
+}
+.map-wrap .leaflet-control-zoom a {
+  width: 28px;
+  height: 28px;
+  line-height: 26px;
+  font: 600 16px/26px var(--font-ui);
+  color: var(--text);
+  background: var(--surface);
+  border-bottom-color: var(--border);
+}
+.map-wrap .leaflet-control-zoom a:hover { background: var(--bg); color: var(--text); }
+.map-wrap .leaflet-control-zoom a.leaflet-disabled { color: var(--unused); background: var(--surface); }

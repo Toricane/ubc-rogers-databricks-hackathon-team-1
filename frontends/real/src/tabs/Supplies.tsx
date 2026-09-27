@@ -48,8 +48,7 @@ export function SuppliesTab({
             </>
           )}
         </h1>
-        {n > 0 && <span className="tag">target</span>}
-        {n > 0 && <span className="tag">scenario rates</span>}
+        {n > 0 && <span className="headline-meta">Target · scenario rates</span>}
         <span className="spacer" />
         {n > 0 && (
           <button className="btn-primary" onClick={copy}>
