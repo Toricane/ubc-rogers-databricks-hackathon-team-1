@@ -1,0 +1,383 @@
+{
+  "sources": {
+    "labels": {
+      "title": "The 36 origin labels exactly as spelled in workspace.default.synthetic_data (repo notebooks/, frontends/waterfront-presence-sketch/public/data/origins.json)",
+      "url": null
+    },
+    "vancouver-local-areas": {
+      "title": "City of Vancouver Open Data, local-area-boundary (centroid, via teammate's crosswalk)",
+      "url": "https://opendata.vancouver.ca/explore/dataset/local-area-boundary/information/"
+    },
+    "statcan-2021-csd": {
+      "title": "Statistics Canada 2021 census subdivision boundary file lcsd000b21a_e (centroid, via teammate's crosswalk)",
+      "url": "https://www12.statcan.gc.ca/census-recensement/2021/geo/sip-pis/boundary-limites/index2021-eng.cfm"
+    },
+    "team_assumption": {
+      "title": "Team assumption: the Burrard Inlet, Fraser, or Pitt River crossings a resident would use to get home from Waterfront Station. Any one open = can get home. An empty list = can get home by road without a listed crossing.",
+      "url": null
+    }
+  },
+  "notes": [
+    "group: vancouver = City of Vancouver local areas plus UBC (team decision); metro = other Metro Vancouver municipalities; outside = provinces, 'British Columbia Other', and International.",
+    "lat/lng are null for provinces and International; they are not drawn on the home-area map.",
+    "UBC point is the campus piece of census subdivision Metro Vancouver A, not the centroid of the whole subdivision.",
+    "Delta via Richmond also needs a North Arm crossing; 'any listed crossing open' is a simplification."
+  ],
+  "origins": [
+    {
+      "name": "Alberta",
+      "group": "outside",
+      "lat": null,
+      "lng": null,
+      "crossings": [],
+      "source": "labels",
+      "crossings_source": null
+    },
+    {
+      "name": "Arbutus Ridge",
+      "group": "vancouver",
+      "lat": 49.2468,
+      "lng": -123.16167,
+      "crossings": [],
+      "source": "vancouver-local-areas",
+      "crossings_source": null
+    },
+    {
+      "name": "Atlantic Canada",
+      "group": "outside",
+      "lat": null,
+      "lng": null,
+      "crossings": [],
+      "source": "labels",
+      "crossings_source": null
+    },
+    {
+      "name": "British Columbia Other",
+      "group": "outside",
+      "lat": null,
+      "lng": null,
+      "crossings": [],
+      "source": "labels",
+      "crossings_source": null
+    },
+    {
+      "name": "Burnaby",
+      "group": "metro",
+      "lat": 49.24607,
+      "lng": -122.96508,
+      "crossings": [],
+      "source": "statcan-2021-csd",
+      "crossings_source": "team_assumption"
+    },
+    {
+      "name": "Delta",
+      "group": "metro",
+      "lat": 49.09944,
+      "lng": -123.01045,
+      "crossings": [
+        "massey_tunnel",
+        "alex_fraser",
+        "stalawasem"
+      ],
+      "source": "statcan-2021-csd",
+      "crossings_source": "team_assumption"
+    },
+    {
+      "name": "Downtown",
+      "group": "vancouver",
+      "lat": 49.28075,
+      "lng": -123.11657,
+      "crossings": [],
+      "source": "vancouver-local-areas",
+      "crossings_source": null
+    },
+    {
+      "name": "Dunbar-Southlands",
+      "group": "vancouver",
+      "lat": 49.23796,
+      "lng": -123.18955,
+      "crossings": [],
+      "source": "vancouver-local-areas",
+      "crossings_source": null
+    },
+    {
+      "name": "Fairview",
+      "group": "vancouver",
+      "lat": 49.26454,
+      "lng": -123.13105,
+      "crossings": [],
+      "source": "vancouver-local-areas",
+      "crossings_source": null
+    },
+    {
+      "name": "Grandview-Woodland",
+      "group": "vancouver",
+      "lat": 49.27644,
+      "lng": -123.06673,
+      "crossings": [],
+      "source": "vancouver-local-areas",
+      "crossings_source": null
+    },
+    {
+      "name": "Hastings-Sunrise",
+      "group": "vancouver",
+      "lat": 49.27793,
+      "lng": -123.04027,
+      "crossings": [],
+      "source": "vancouver-local-areas",
+      "crossings_source": null
+    },
+    {
+      "name": "International",
+      "group": "outside",
+      "lat": null,
+      "lng": null,
+      "crossings": [],
+      "source": "labels",
+      "crossings_source": null
+    },
+    {
+      "name": "Kensington-Cedar Cottage",
+      "group": "vancouver",
+      "lat": 49.24669,
+      "lng": -123.07288,
+      "crossings": [],
+      "source": "vancouver-local-areas",
+      "crossings_source": null
+    },
+    {
+      "name": "Killarney",
+      "group": "vancouver",
+      "lat": 49.21702,
+      "lng": -123.03765,
+      "crossings": [],
+      "source": "vancouver-local-areas",
+      "crossings_source": null
+    },
+    {
+      "name": "Kitsilano",
+      "group": "vancouver",
+      "lat": 49.26754,
+      "lng": -123.16329,
+      "crossings": [],
+      "source": "vancouver-local-areas",
+      "crossings_source": null
+    },
+    {
+      "name": "Langley",
+      "group": "metro",
+      "lat": 49.094,
+      "lng": -122.57478,
+      "crossings": [
+        "port_mann",
+        "stalawasem"
+      ],
+      "source": "statcan-2021-csd",
+      "crossings_source": "team_assumption"
+    },
+    {
+      "name": "Manitoba",
+      "group": "outside",
+      "lat": null,
+      "lng": null,
+      "crossings": [],
+      "source": "labels",
+      "crossings_source": null
+    },
+    {
+      "name": "Maple Ridge",
+      "group": "metro",
+      "lat": 49.26183,
+      "lng": -122.5162,
+      "crossings": [
+        "pitt_river",
+        "port_mann"
+      ],
+      "source": "statcan-2021-csd",
+      "crossings_source": "team_assumption"
+    },
+    {
+      "name": "Marpole",
+      "group": "vancouver",
+      "lat": 49.21021,
+      "lng": -123.12838,
+      "crossings": [],
+      "source": "vancouver-local-areas",
+      "crossings_source": null
+    },
+    {
+      "name": "Mount Pleasant",
+      "group": "vancouver",
+      "lat": 49.26307,
+      "lng": -123.09851,
+      "crossings": [],
+      "source": "vancouver-local-areas",
+      "crossings_source": null
+    },
+    {
+      "name": "New Westminster",
+      "group": "metro",
+      "lat": 49.20849,
+      "lng": -122.91866,
+      "crossings": [],
+      "source": "statcan-2021-csd",
+      "crossings_source": "team_assumption"
+    },
+    {
+      "name": "North Vancouver",
+      "group": "metro",
+      "lat": 49.36113,
+      "lng": -123.01093,
+      "crossings": [
+        "seabus",
+        "lions_gate",
+        "ironworkers"
+      ],
+      "source": "statcan-2021-csd",
+      "crossings_source": "team_assumption"
+    },
+    {
+      "name": "Oakridge",
+      "group": "vancouver",
+      "lat": 49.2264,
+      "lng": -123.12302,
+      "crossings": [],
+      "source": "vancouver-local-areas",
+      "crossings_source": null
+    },
+    {
+      "name": "Ontario",
+      "group": "outside",
+      "lat": null,
+      "lng": null,
+      "crossings": [],
+      "source": "labels",
+      "crossings_source": null
+    },
+    {
+      "name": "Pitt Meadows",
+      "group": "metro",
+      "lat": 49.27195,
+      "lng": -122.66379,
+      "crossings": [
+        "pitt_river",
+        "port_mann"
+      ],
+      "source": "statcan-2021-csd",
+      "crossings_source": "team_assumption"
+    },
+    {
+      "name": "Port Moody",
+      "group": "metro",
+      "lat": 49.29794,
+      "lng": -122.87,
+      "crossings": [],
+      "source": "statcan-2021-csd",
+      "crossings_source": "team_assumption"
+    },
+    {
+      "name": "Renfrew-Collingwood",
+      "group": "vancouver",
+      "lat": 49.24734,
+      "lng": -123.04017,
+      "crossings": [],
+      "source": "vancouver-local-areas",
+      "crossings_source": null
+    },
+    {
+      "name": "Richmond",
+      "group": "metro",
+      "lat": 49.16455,
+      "lng": -123.10655,
+      "crossings": [
+        "canada_line",
+        "oak_st",
+        "knight_st",
+        "arthur_laing"
+      ],
+      "source": "statcan-2021-csd",
+      "crossings_source": "team_assumption"
+    },
+    {
+      "name": "Saskatchewan and Territories",
+      "group": "outside",
+      "lat": null,
+      "lng": null,
+      "crossings": [],
+      "source": "labels",
+      "crossings_source": null
+    },
+    {
+      "name": "Strathcona",
+      "group": "vancouver",
+      "lat": 49.27822,
+      "lng": -123.08824,
+      "crossings": [],
+      "source": "vancouver-local-areas",
+      "crossings_source": null
+    },
+    {
+      "name": "Sunset",
+      "group": "vancouver",
+      "lat": 49.21876,
+      "lng": -123.09204,
+      "crossings": [],
+      "source": "vancouver-local-areas",
+      "crossings_source": null
+    },
+    {
+      "name": "Surrey",
+      "group": "metro",
+      "lat": 49.11671,
+      "lng": -122.78429,
+      "crossings": [
+        "stalawasem",
+        "expo_line",
+        "port_mann",
+        "alex_fraser"
+      ],
+      "source": "statcan-2021-csd",
+      "crossings_source": "team_assumption"
+    },
+    {
+      "name": "UBC",
+      "group": "vancouver",
+      "lat": 49.25777,
+      "lng": -123.23026,
+      "crossings": [],
+      "source": "statcan-2021-csd",
+      "crossings_source": null
+    },
+    {
+      "name": "Victoria-Fraserview",
+      "group": "vancouver",
+      "lat": 49.22001,
+      "lng": -123.06413,
+      "crossings": [],
+      "source": "vancouver-local-areas",
+      "crossings_source": null
+    },
+    {
+      "name": "West End",
+      "group": "vancouver",
+      "lat": 49.28501,
+      "lng": -123.13544,
+      "crossings": [],
+      "source": "vancouver-local-areas",
+      "crossings_source": null
+    },
+    {
+      "name": "West Vancouver",
+      "group": "metro",
+      "lat": 49.36845,
+      "lng": -123.19302,
+      "crossings": [
+        "lions_gate",
+        "ironworkers",
+        "seabus"
+      ],
+      "source": "statcan-2021-csd",
+      "crossings_source": "team_assumption"
+    }
+  ]
+}

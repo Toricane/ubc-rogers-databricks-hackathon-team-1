@@ -1,0 +1,275 @@
+{
+  "sources": {
+    "vanmap_hubs": {
+      "title": "City of Vancouver VanMap, Disaster Support Hubs (KML)",
+      "url": "https://vanmapp1.vancouver.ca/googleKml/DisasterSupportHubs/",
+      "fetched": "2026-09-26"
+    },
+    "dataset": {
+      "title": "workspace.default.synthetic_data, coordinate repeated on every Waterfront Station row (see repo AGENTS.md)",
+      "url": null
+    }
+  },
+  "notes": [
+    "capacity is null for every hub: the City does not publish hub capacities. The app uses an officer-set 'max people per hub' instead (team assumption)."
+  ],
+  "site": {
+    "id": "waterfront",
+    "name": "Waterfront Station",
+    "lat": 49.2857,
+    "lng": -123.1115,
+    "source": "dataset"
+  },
+  "hubs": [
+    {
+      "id": "britannia_community_centre",
+      "name": "Britannia Community Centre",
+      "address": "1661 Napier St, Vancouver, BC",
+      "phone": "604-718-5800",
+      "lat": 49.274633,
+      "lng": -123.071071,
+      "capacity": null,
+      "source": "vanmap_hubs"
+    },
+    {
+      "id": "champlain_heights_community_centre",
+      "name": "Champlain Heights Community Centre",
+      "address": "3350 Maquinna Drive, Vancouver, BC",
+      "phone": "604-718-6575",
+      "lat": 49.214946,
+      "lng": -123.032033,
+      "capacity": null,
+      "source": "vanmap_hubs"
+    },
+    {
+      "id": "coal_harbour_community_centre",
+      "name": "Coal Harbour Community Centre",
+      "address": "480 Broughton St, Vancouver, BC",
+      "phone": "604-718-8222",
+      "lat": 49.290292,
+      "lng": -123.125437,
+      "capacity": null,
+      "source": "vanmap_hubs"
+    },
+    {
+      "id": "creekside_community_centre",
+      "name": "Creekside Community Centre",
+      "address": "1 Athletes Way, Vancouver, BC",
+      "phone": "604-257-3050",
+      "lat": 49.271787,
+      "lng": -123.105586,
+      "capacity": null,
+      "source": "vanmap_hubs"
+    },
+    {
+      "id": "douglas_park_community_centre",
+      "name": "Douglas Park Community Centre",
+      "address": "801 W 22nd Av, Vancouver, BC",
+      "phone": "604-257-8130",
+      "lat": 49.252078,
+      "lng": -123.122429,
+      "capacity": null,
+      "source": "vanmap_hubs"
+    },
+    {
+      "id": "dunbar_community_centre",
+      "name": "Dunbar Community Centre",
+      "address": "4747 Dunbar St, Vancouver, BC",
+      "phone": "604-222-6060",
+      "lat": 49.243797,
+      "lng": -123.186142,
+      "capacity": null,
+      "source": "vanmap_hubs"
+    },
+    {
+      "id": "false_creek_community_centre",
+      "name": "False Creek Community Centre",
+      "address": "1318 Cartwright St, Vancouver, BC",
+      "phone": "604-257-8195",
+      "lat": 49.269397,
+      "lng": -123.13402,
+      "capacity": null,
+      "source": "vanmap_hubs"
+    },
+    {
+      "id": "fraserview_library",
+      "name": "Fraserview Library",
+      "address": "1950 Argyle Drive, Vancouver, BC",
+      "phone": "604-665-3957",
+      "lat": 49.219655,
+      "lng": -123.066856,
+      "capacity": null,
+      "source": "vanmap_hubs"
+    },
+    {
+      "id": "hastings_community_centre",
+      "name": "Hastings Community Centre",
+      "address": "3096 E Hastings St, Vancouver, BC",
+      "phone": "604-718-6222",
+      "lat": 49.280944,
+      "lng": -123.039476,
+      "capacity": null,
+      "source": "vanmap_hubs"
+    },
+    {
+      "id": "hillcrest_community_centre",
+      "name": "Hillcrest Community Centre",
+      "address": "4575 Clancy Loranger Way, Vancouver, BC",
+      "phone": "604-257-8680",
+      "lat": 49.243492,
+      "lng": -123.107643,
+      "capacity": null,
+      "source": "vanmap_hubs"
+    },
+    {
+      "id": "kensington_community_centre",
+      "name": "Kensington Community Centre",
+      "address": "5175 Dumfries St, Vancouver, BC",
+      "phone": "604-718-6200",
+      "lat": 49.237262,
+      "lng": -123.07485,
+      "capacity": null,
+      "source": "vanmap_hubs"
+    },
+    {
+      "id": "kerrisdale_community_centre",
+      "name": "Kerrisdale Community Centre",
+      "address": "5851 West Boulevard, Vancouver, BC",
+      "phone": "604-257-8100",
+      "lat": 49.233166,
+      "lng": -123.156427,
+      "capacity": null,
+      "source": "vanmap_hubs"
+    },
+    {
+      "id": "killarney_community_centre",
+      "name": "Killarney Community Centre",
+      "address": "6260 Killarney St, Vancouver, BC",
+      "phone": "604-718-8201",
+      "lat": 49.226891,
+      "lng": -123.043999,
+      "capacity": null,
+      "source": "vanmap_hubs"
+    },
+    {
+      "id": "kitsilano_war_memorial_community_centre",
+      "name": "Kitsilano War Memorial Community Centre",
+      "address": "2690 Larch St, Vancouver, BC",
+      "phone": "604-257-6976",
+      "lat": 49.261708,
+      "lng": -123.162146,
+      "capacity": null,
+      "source": "vanmap_hubs"
+    },
+    {
+      "id": "marpole_oakridge_community_centre",
+      "name": "Marpole-Oakridge Community Centre",
+      "address": "990 W 59th Av, Vancouver, BC",
+      "phone": "604-257-8180",
+      "lat": 49.216809,
+      "lng": -123.128657,
+      "capacity": null,
+      "source": "vanmap_hubs"
+    },
+    {
+      "id": "mount_pleasant_community_centre",
+      "name": "Mount Pleasant Community Centre",
+      "address": "1 Kingsway, Vancouver, BC",
+      "phone": "604-257-3080",
+      "lat": 49.264157,
+      "lng": -123.100207,
+      "capacity": null,
+      "source": "vanmap_hubs"
+    },
+    {
+      "id": "oppenheimer_park",
+      "name": "Oppenheimer Park",
+      "address": "400 Powell Street, Vancouver, BC",
+      "phone": "604-253-8830",
+      "lat": 49.282645,
+      "lng": -123.094335,
+      "capacity": null,
+      "source": "vanmap_hubs"
+    },
+    {
+      "id": "renfrew_park_community_centre",
+      "name": "Renfrew Park Community Centre",
+      "address": "2929 E 22nd Av, Vancouver, BC",
+      "phone": "604-257-8388",
+      "lat": 49.251156,
+      "lng": -123.04267,
+      "capacity": null,
+      "source": "vanmap_hubs"
+    },
+    {
+      "id": "roundhouse_community_centre",
+      "name": "Roundhouse Community Centre",
+      "address": "181 Roundhouse Mews, Vancouver, BC",
+      "phone": "604-713-1800",
+      "lat": 49.273308,
+      "lng": -123.121747,
+      "capacity": null,
+      "source": "vanmap_hubs"
+    },
+    {
+      "id": "strathcona_community_centre",
+      "name": "Strathcona Community Centre",
+      "address": "601 Keefer St, Vancouver, BC",
+      "phone": "604-713-1838",
+      "lat": 49.279634,
+      "lng": -123.09157,
+      "capacity": null,
+      "source": "vanmap_hubs"
+    },
+    {
+      "id": "sunset_community_centre",
+      "name": "Sunset Community Centre",
+      "address": "6810 Main St, Vancouver, BC",
+      "phone": "604-718-6505",
+      "lat": 49.222867,
+      "lng": -123.101184,
+      "capacity": null,
+      "source": "vanmap_hubs"
+    },
+    {
+      "id": "thunderbird_community_centre",
+      "name": "Thunderbird Community Centre",
+      "address": "2311 Cassiar St, Vancouver, BC",
+      "phone": "604-713-1818",
+      "lat": 49.263888,
+      "lng": -123.031219,
+      "capacity": null,
+      "source": "vanmap_hubs"
+    },
+    {
+      "id": "trout_lake_community_centre",
+      "name": "Trout Lake Community Centre",
+      "address": "3360 Victoria Drive, Vancouver, BC",
+      "phone": "604-257-6955",
+      "lat": 49.255257,
+      "lng": -123.065372,
+      "capacity": null,
+      "source": "vanmap_hubs"
+    },
+    {
+      "id": "west_end_community_centre",
+      "name": "West End Community Centre",
+      "address": "870 Denman St, Vancouver, BC",
+      "phone": "604-257-8333",
+      "lat": 49.289913,
+      "lng": -123.136074,
+      "capacity": null,
+      "source": "vanmap_hubs"
+    },
+    {
+      "id": "west_point_grey_community_centre",
+      "name": "West Point Grey Community Centre",
+      "address": "4397 W 2nd Av, Vancouver, BC",
+      "phone": "604-257-8140",
+      "lat": 49.271589,
+      "lng": -123.203993,
+      "capacity": null,
+      "source": "vanmap_hubs"
+    }
+  ]
+}

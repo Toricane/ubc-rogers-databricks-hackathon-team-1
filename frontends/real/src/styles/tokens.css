@@ -1,0 +1,50 @@
+:root {
+  /* Brand — inspired by Rogers/Databricks red; not official brand colours */
+  --brand: #E3242B;
+  --brand-dark: #B3141B;
+  --brand-tint: #FDECEC;
+
+  /* Neutrals */
+  --bg: #F6F6F4;
+  --surface: #FFFFFF;
+  --border: #E4E4E0;
+  --text: #161B22;
+  --muted: #5A6470;
+  --on-brand: #FFFFFF;
+  --unused: #8A929C;
+  --scrim: rgba(22, 27, 34, .45);
+  --scrim-light: rgba(22, 27, 34, .35);
+
+  /* Status — always paired with an icon and a word */
+  --critical: #9E0B1F;
+  --ok: #12A150;
+
+  /* Groups */
+  --g-vancouver: #00A3AD;
+  --g-metro: #6E3BFF;
+  --g-outside: #F5A700;
+
+  /* Type */
+  --font-ui: "Inter", system-ui, sans-serif;
+  --font-num: "IBM Plex Mono", ui-monospace, monospace;
+  --fs-headline: 26px;
+  --fs-card-num: 36px;
+  --fs-body: 14px;
+  --fs-small: 12px;
+
+  /* Shape */
+  --r-card: 6px;
+  --r-control: 4px;
+  --edge: 4px;
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, .08);
+
+  /* Motion */
+  --t-fast: 150ms;
+
+  /* Spacing */
+  --s1: 4px;
+  --s2: 8px;
+  --s3: 12px;
+  --s4: 16px;
+  --s5: 24px;
+}

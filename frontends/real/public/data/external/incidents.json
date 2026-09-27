@@ -1,0 +1,66 @@
+{
+  "sources": {
+    "bchydro_dec17": {
+      "title": "BC Hydro, 'Strong wind and heavy rain leave about 120,000 BC Hydro customers without power', Dec 17, 2025",
+      "url": "https://www.bchydro.com/news/press_centre/news_releases/2025/strong-wind-and-heavy-rain-leave-about-120-000-bc-hydro-customer.html",
+      "fetched": "2026-09-26"
+    },
+    "anywhere_jul22": {
+      "title": "Anywhere Vancouver, 'Heat, air quality warnings issued for Metro Vancouver…', July 22, 2026",
+      "url": "https://anywherevancouver.com/heat-air-quality-warnings-metro-vancouver-july-22-2026/",
+      "fetched": "2026-09-26"
+    },
+    "cp24_aug22": {
+      "title": "CP24, 'Lightning from intense thunderstorms disrupts operations at Vancouver airport', Aug 23, 2026",
+      "url": "https://www.cp24.com/news/canada/2026/08/23/lightning-thunderstorm-impact-operations-at-vancouver-airport/",
+      "fetched": "2026-09-26"
+    }
+  },
+  "incidents": [
+    {
+      "id": "dec17",
+      "date": "2025-12-17",
+      "hazard": "storm",
+      "title": "Wind and rain storm",
+      "description": "about 120,000 BC Hydro customers without power",
+      "quote": "A powerful windstorm combined with heavy rainfall overnight has left about 120,000 BC Hydro customers without electricity, primarily across the Lower Mainland.",
+      "slot_start": null,
+      "slot_todo": "TODO: teammates to confirm slot_start against the dataset clock (timestamps are UTC; do not convert). Source gives no time of day.",
+      "closed_crossings": [],
+      "duration_h": 72,
+      "duration_source": "canada_kits 72 h default. TODO: no incident-specific duration published.",
+      "source": "bchydro_dec17",
+      "source_url": "https://www.bchydro.com/news/press_centre/news_releases/2025/strong-wind-and-heavy-rain-leave-about-120-000-bc-hydro-customer.html"
+    },
+    {
+      "id": "jul22",
+      "date": "2026-07-22",
+      "hazard": "heat_smoke",
+      "title": "Heat and wildfire smoke",
+      "description": "humidex up to 42°C",
+      "quote": "However, with the humidity, temperatures in some areas will feel as high as 42°C.",
+      "slot_start": null,
+      "slot_todo": "TODO: teammates to confirm slot_start against the dataset clock (timestamps are UTC; do not convert). Source gives no time of day.",
+      "closed_crossings": [],
+      "duration_h": 72,
+      "duration_source": "canada_kits 72 h default. TODO: no incident-specific duration published.",
+      "source": "anywhere_jul22",
+      "source_url": "https://anywherevancouver.com/heat-air-quality-warnings-metro-vancouver-july-22-2026/"
+    },
+    {
+      "id": "aug22",
+      "date": "2026-08-22",
+      "hazard": "lightning",
+      "title": "Lightning storm, YVR ground stop",
+      "description": "YVR ground stop 21:30–02:55; 39 aircraft queued; 1,813 lightning strikes",
+      "quote": "The intense weather grounded all departing flights between 9:30 p.m. Saturday and 2:55 a.m. Sunday … A total of 39 aircraft were waiting when the alert was lifted at 2:55 a.m. … There were 1,813 lightning strikes recorded across the Lower Mainland",
+      "slot_start": "21:30",
+      "slot_todo": "TODO: teammates to confirm slot_start against the dataset clock (timestamps are UTC; do not convert). 21:30 is the ground-stop start as reported by CP24, in local (Pacific) time; the matching dataset slot may differ.",
+      "closed_crossings": [],
+      "duration_h": 72,
+      "duration_source": "canada_kits 72 h default. TODO: no incident-specific duration published.",
+      "source": "cp24_aug22",
+      "source_url": "https://www.cp24.com/news/canada/2026/08/23/lightning-thunderstorm-impact-operations-at-vancouver-airport/"
+    }
+  ]
+}
