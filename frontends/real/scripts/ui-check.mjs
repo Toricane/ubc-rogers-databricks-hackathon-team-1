@@ -143,8 +143,10 @@ await shot("tab2-after");
 
 const after = { badges: await badges() };
 console.log("badges before:", before.badges.join(" | "), " after:", after.badges.join(" | "));
-// Tab 2's badge is the closed count unless buses are sized (Aug 22 has no dispatch snapshot, so no bus counts).
-check(after.badges[1] === "2", "tab 2 badge shows 2 closed");
+// Tab 2's badge is people who can get home (Vancouver + Metro with an open crossing). Lions Gate and
+// Ironworkers are closed, but SeaBus (also on North/West Van's crossing list) is still open, so nobody
+// is actually stranded yet and the badge is unchanged.
+check(after.badges[1] === before.badges[1], `tab 2 badge unchanged while SeaBus stays open (${after.badges[1]})`);
 console.log("note: SeaBus is still open, so North Shore residents can still get home; tabs 1/3/4 only change once they are stranded");
 
 await page.keyboard.press("1");
