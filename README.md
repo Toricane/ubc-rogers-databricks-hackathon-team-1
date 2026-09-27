@@ -67,7 +67,7 @@ notebooks/03_waterfront_activity.py  # active visits by 30-minute bin and origin
 notebooks/04_generation_report.py    # site calendars, dwell, and home-label mix
 notebooks/05_dispatch.py             # gold_route_* tables for the "Getting home" tab (Jul 22 incident, TransLink GTFS)
 notebooks/dispatch_transit.py        # GTFS parsing used by 05_dispatch.py (plain module)
-frontends/real/                      # Five Bars 3G, the duty-officer tool
+frontends/real/                      # Cell-Safe, the duty-officer tool
 frontends/waterfront-presence-sketch/   # one test player; add other tools as sibling folders
 ```
 

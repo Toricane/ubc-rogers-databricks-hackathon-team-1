@@ -1,4 +1,6 @@
-# Five Bars 3G
+# Cell-Safe
+
+Built by team **Five Bars 3G** for the Rogers × Databricks × UBC smarter-communities hackathon.
 
 A reactive tool for a City of Vancouver Emergency Management duty officer during an extreme-weather incident at the Waterfront Station area. It answers five questions, one per tab:
 
@@ -7,6 +9,8 @@ A reactive tool for a City of Vancouver Emergency Management duty officer during
 3. **Where to send people.** Where do stranded people go?
 4. **Supplies.** What do I deliver to each hub?
 5. **Alert.** What do I tell people in the area?
+
+The tool treats **Wednesday, July 22, 2026** (a heat and wildfire-smoke day) as "today". It replays that day of the synthetic data minute by minute, so the pitch feels like a live incident. The data is used exactly as exported; only the framing is "day of". The officer picks the type of weather; the day stays fixed. The app opens with a short animated splash that any click or key skips; with reduced motion it shows a still logo.
 
 It is not a planning or analysis tool. Trends, forecasts and turn-by-turn routing are out of scope; see `NEXT_STEPS.md`. Tab 2 draws scheduled TransLink routes (GTFS static, not real-time) but gives no directions.
 
@@ -26,14 +30,15 @@ Useful URLs:
 
 | URL | What it does |
 |---|---|
-| `/?demo=1` | Opens the Aug 22 lightning-storm incident on tab 1 |
+| `/` | Opens on Jul 22 at the current clock time (rounded down to :00 or :30) |
+| `/?demo=1` | Opens on Jul 22 at 17:00 on tab 1, same every time (use for the pitch) |
 | `/?offline=1` | Hides map tiles, so the map needs no network |
 | `/?data=static` | Exported Databricks snapshots (the default). Missing dates show an error, never mock numbers |
 | `/?data=mock` | Made-up numbers for development, always with the "Mock data" badge |
 
 Keyboard: `←` and `→` step the time by 30 minutes. Keys `1` to `5` switch tabs. `Esc` closes the (i) drawer.
 
-UI check: with a server running, `node scripts/ui-check.mjs http://127.0.0.1:8000/ <screenshot-folder>` clicks through all five tabs at 1280×720 with `?demo=1`. It checks that the totals on screen equal the gold totals in `manifest.json`, toggles crossings, opens Jul 22 17:00 and checks that closing SeaBus sizes buses on a North Vancouver route, steps the time past midnight, and confirms that a date that wasn't exported shows an error. It uses the locally installed Chrome or Edge through `playwright-core`.
+UI check: with a server running, `node scripts/ui-check.mjs http://127.0.0.1:8000/ <screenshot-folder>` clicks through all five tabs at 1280×720 with `?demo=1`. It checks that the totals on screen equal the gold totals in `manifest.json`, skips the splash, toggles crossings, switches the weather, opens Jul 22 17:00 and checks that closing SeaBus sizes buses on a North Vancouver route, steps the time past midnight into Jul 23, and checks that ← stops at Jul 22 00:00. It uses the locally installed Chrome or Edge through `playwright-core`.
 
 ## Data
 
@@ -71,7 +76,7 @@ src/
   App.tsx                 incident bar, tabs, state, keyboard
   model.ts                derives everything the tabs show
   data/
-    types.ts              FiveBarsData interface and shapes
+    types.ts              CellSafeData interface and shapes
     adapter.ts            StaticAdapter (default), MockAdapter, DatabricksAdapter (stub)
     external.ts           loads public/data/external/*.json (incl. transport.json)
     mock.ts               mock presence (made-up numbers, real 36 labels)
@@ -81,7 +86,7 @@ src/
     drivebc.ts            Open511 client (adapted from teammate's map)
     geo.ts, time.ts       haversine, walking time; "HH:MM" arithmetic
   tabs/                   one file per tab
-  components/             MapFrame, marker icons, ChangeDialog, InfoDrawer
+  components/             Splash, Logo, MapFrame, marker icons, ChangeDialog (weather picker), InfoDrawer
   styles/tokens.css       design tokens (the only colours used)
 public/data/external/     reviewed reference data, every record sourced
 public/data/internal/     exported Databricks snapshots + manifest.json
@@ -125,7 +130,7 @@ server.mjs, app.yaml      static server and Databricks Apps config
 | Cots and blankets 1 per lodging person; N95 1 per person in smoke; charging 1 per 10 people | `rates.json` |
 | Cooled floor space for heat reuses the Sphere 4.5 m² rate | `rates.json` |
 | Delivery deadline = incident time + 1 hour, as a target | tab 4 |
-| Incidents with no sourced time open at 17:00 | `ChangeDialog.tsx` |
+| Jul 22, 2026 is shown as "today"; time runs from Jul 22 00:00 to Jul 23 23:30 | `App.tsx` (`SCENARIO_DATE`) |
 | Resource rates and max people per hub are scenario assumptions, not measurements | tabs 3–4, (i) drawer |
 | Water duration 72 h for every incident (Canada.ca default) | `incidents.json` |
 | First crossing in an origin's list is its usual way home | `origins.json` order, tab 2 |

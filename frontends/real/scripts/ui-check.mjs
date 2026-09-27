@@ -44,6 +44,9 @@ const noScroll = async () =>
   });
 
 await page.goto(`${base}?demo=1`);
+check(await page.locator(".splash").isVisible(), "splash shows on load");
+await page.keyboard.press("Space"); // any key skips it
+await page.waitForSelector(".splash", { state: "detached", timeout: 3000 });
 await page.waitForSelector(".group-cards");
 await page.waitForTimeout(1500);
 
@@ -52,17 +55,19 @@ const manifest = await (await fetch(new URL("data/internal/manifest.json", base)
 const shownTotal = async () => Number((await page.locator(".headline .num").first().innerText()).replace(/,/g, ""));
 const goldAt = (date, slot) => manifest?.days?.[date]?.gold_totals?.[slot];
 check(!!manifest, "manifest.json is served");
-check((await page.locator(".source-badge").innerText()).includes("Historical snapshot"), "badge says Historical snapshot · Databricks");
+check((await page.locator(".source-badge").count()) === 0, "no data-source badge in the header");
+check((await page.title()) === "Cell-Safe", "page title is Cell-Safe");
 check((await page.locator(".mock-badge").count()) === 0, "no Mock data badge");
 check((await page.locator("path.home-circle").count()) > 0, "home-area circles carry their group colour class");
 {
-  const g = goldAt("2026-08-22", "21:30");
+  const g = goldAt("2026-07-22", "17:00");
   const v = await shownTotal();
-  check(v === g, `Aug 22 21:30 shows ${v}; gold total_count ${g}`);
+  check(v === g, `Jul 22 17:00 shows ${v}; gold total_count ${g}`);
 }
 
 check((await page.locator(".tab.active").innerText()).includes("Situation"), "demo opens on tab 1");
-check((await page.locator(".incident .name").innerText()).includes("Aug 22"), "demo opens the aug22 incident");
+check((await page.locator(".time-step .day").textContent()) === "Wed, Jul 22", "the day is Wed, Jul 22");
+check((await page.locator(".incident-text .name").innerText()).includes("Heat and wildfire smoke"), "weather is heat and smoke");
 
 const before = { badges: await badges() };
 for (const k of ["1", "2", "3", "4", "5"]) {
@@ -148,18 +153,36 @@ const alert3 = await page.locator(".alert-box").inputValue();
 check(/North Vancouver and West Vancouver: crossings are closed/.test(alert3), "alert sends the North Shore to a hub");
 console.log("--- alert with SeaBus closed ---\n" + alert3 + "\n---");
 
+// Change weather: supplies follow the hazard.
+await page.keyboard.press("4");
+await page.waitForTimeout(300);
+const heatItems = await page.locator(".totals-card td:first-child").allInnerTexts();
+check(heatItems.includes("N95 masks") && !heatItems.includes("Blankets"), `heat supplies: ${[...new Set(heatItems)].join(", ")}`);
+await page.locator("button", { hasText: "Change weather" }).click();
+await page.locator(".weather-option", { hasText: "Lightning storm" }).click();
+await page.locator("button", { hasText: "Use this weather" }).click();
+await page.waitForTimeout(400);
+const ltItems = await page.locator(".totals-card td:first-child").allInnerTexts();
+check(ltItems.includes("Blankets") && !ltItems.includes("N95 masks"), `lightning supplies: ${[...new Set(ltItems)].join(", ")}`);
+check((await page.locator(".time-step .day").textContent()) === "Wed, Jul 22", "changing weather keeps the day");
+await page.locator("button", { hasText: "Change weather" }).click();
+await page.locator(".weather-option", { hasText: "Heat and wildfire smoke" }).click();
+await page.locator("button", { hasText: "Use this weather" }).click();
+await page.waitForTimeout(300);
+
 // Time stepping and the drawer.
-const t0 = await page.locator(".time-val .time").innerText();
+const t0 = await page.locator(".time-step .time").innerText();
 await page.keyboard.press("1");
 await page.keyboard.press("ArrowRight");
 await page.waitForTimeout(500);
-check((await page.locator(".time-val .time").innerText()) === "22:00", "→ steps the time to 22:00");
-check((await shownTotal()) === goldAt("2026-08-22", "22:00"), `22:00 total matches gold (${goldAt("2026-08-22", "22:00")})`);
-for (let i = 0; i < 5; i++) await page.keyboard.press("ArrowRight");
+check((await page.locator(".time-step .time").innerText()) === "17:30", "→ steps the time to 17:30");
+check((await shownTotal()) === goldAt("2026-07-22", "17:30"), `17:30 total matches gold (${goldAt("2026-07-22", "17:30")})`);
+for (let i = 0; i < 14; i++) await page.keyboard.press("ArrowRight");
 await page.waitForTimeout(600);
-check((await page.locator(".time-val .time").innerText()) === "00:30", "stepping past midnight reaches 00:30");
-check((await shownTotal()) === goldAt("2026-08-23", "00:30"), `Aug 23 00:30 total matches gold (${goldAt("2026-08-23", "00:30")})`);
-for (let i = 0; i < 6; i++) await page.keyboard.press("ArrowLeft");
+check((await page.locator(".time-step .time").innerText()) === "00:30", "stepping past midnight reaches 00:30");
+check((await page.locator(".time-step .day").textContent()) === "Thu, Jul 23", "the day rolls to Thu, Jul 23");
+check((await shownTotal()) === goldAt("2026-07-23", "00:30"), `Jul 23 00:30 total matches gold (${goldAt("2026-07-23", "00:30")})`);
+for (let i = 0; i < 15; i++) await page.keyboard.press("ArrowLeft");
 await page.waitForTimeout(600);
 await page.locator(".info-btn").click();
 await page.waitForTimeout(300);
@@ -168,27 +191,31 @@ await shot("drawer");
 
 check(missing.length === 0, `no missing files${missing.length ? ": " + missing.join(", ") : ""}`);
 
-// A date that was not exported must show a visible error, not mock numbers.
+// Time stays inside the scenario day: stepping back stops at Wed, Jul 22 00:00.
 await page.keyboard.press("Escape");
 await page.keyboard.press("1");
-for (let i = 0; i < 44; i++) await page.keyboard.press("ArrowLeft"); // Aug 22 21:30 -> Aug 21 23:30
+for (let i = 0; i < 40; i++) await page.keyboard.press("ArrowLeft");
 await page.waitForTimeout(800);
-const err = await page.locator(".panel .status.critical").innerText().catch(() => "");
-check(err.includes("No exported snapshot for 2026-08-21"), `missing date shows an error: ${err}`);
-check((await page.locator(".group-cards").count()) === 0, "no numbers shown for the missing date");
-await shot("missing-date");
+check(
+  (await page.locator(".time-step .day").textContent()) === "Wed, Jul 22" && (await page.locator(".time-step .time").innerText()) === "00:00",
+  "← stops at Wed, Jul 22 00:00",
+);
+check(await page.locator('button[aria-label="30 minutes earlier"]').isDisabled(), "earlier button is disabled at the start of the day");
+check((await shownTotal()) === goldAt("2026-07-22", "00:00"), `00:00 total matches gold (${goldAt("2026-07-22", "00:00")})`);
+await shot("day-start");
 for (const k of ["1", "2", "3", "4", "5"]) {
   await page.keyboard.press(k);
   await page.waitForTimeout(300);
   check(await noScroll(), `tab ${k} still fits after the toggles`);
 }
 // Jul 22 17:00 with SeaBus closed: North Vancouver moves to a scheduled bus over an open bridge, with a bus count.
-await page.keyboard.press("Escape");
-await page.locator(".incident .btn", { hasText: "Change" }).click();
-await page.locator(".dialog .choice", { hasText: "Jul 22" }).click();
-await page.locator(".dialog .btn-primary").click();
+// Reload for a clean state (all crossings open); the demo opens on Jul 22 17:00.
+await page.goto(`${base}?demo=1`);
+await page.keyboard.press("Space");
+await page.waitForSelector(".splash", { state: "detached", timeout: 3000 });
+await page.waitForSelector(".group-cards");
 await page.waitForTimeout(800);
-check((await page.locator(".time-val .time").innerText()) === "17:00", "Jul 22 opens at 17:00");
+check((await page.locator(".time-step .time").innerText()) === "17:00", "Jul 22 opens at 17:00");
 await page.keyboard.press("2");
 await page.waitForTimeout(800);
 check((await page.locator(".route-line").count()) > 0, "tab 2 draws scheduled routes home");

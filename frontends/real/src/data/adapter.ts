@@ -1,10 +1,10 @@
 // One interface, three implementations. Pick with ?data=mock|static|databricks or VITE_DATA_SOURCE.
 // Default is "static" (exported Databricks snapshots). Mock is only used when asked for explicitly.
-import type { DispatchRow, FiveBarsData, HazardId, PresenceRow, Transit } from "./types";
+import type { DispatchRow, CellSafeData, HazardId, PresenceRow, Transit } from "./types";
 import { loadCrossingStatus, loadHazards, loadIncidents, loadRates, loadReference, loadTransport } from "./external";
 import { mockDates, mockPresence } from "./mock";
 
-export type { FiveBarsData } from "./types";
+export type { CellSafeData } from "./types";
 
 abstract class ExternalBase {
   getReference() { return loadReference(); }
@@ -15,7 +15,7 @@ abstract class ExternalBase {
   getTransport() { return loadTransport(); }
 }
 
-export class MockAdapter extends ExternalBase implements FiveBarsData {
+export class MockAdapter extends ExternalBase implements CellSafeData {
   readonly kind = "mock" as const;
   isMock() { return true; }
   async getDates() { return mockDates(); }
@@ -47,7 +47,7 @@ async function tryJson<T>(url: string): Promise<T | null> {
  * Exported Databricks snapshots. Never falls back to mock: a missing file is an error the UI shows.
  * Each day's JSON is fetched once and kept in memory; the server lets the browser cache it too.
  */
-export class StaticAdapter extends ExternalBase implements FiveBarsData {
+export class StaticAdapter extends ExternalBase implements CellSafeData {
   readonly kind = "static" as const;
   private dates: Promise<string[]> | null = null;
   private manifest: Promise<SnapshotManifest | null> | null = null;
@@ -142,7 +142,7 @@ export interface SnapshotManifest {
 }
 
 /** Stub only. Intended endpoints: GET /api/dates, GET /api/presence?date=&slot=. Not implemented. */
-export class DatabricksAdapter extends ExternalBase implements FiveBarsData {
+export class DatabricksAdapter extends ExternalBase implements CellSafeData {
   readonly kind = "databricks" as const;
   isMock() { return false; }
   async getDates(): Promise<string[]> {
@@ -159,7 +159,7 @@ export class DatabricksAdapter extends ExternalBase implements FiveBarsData {
   }
 }
 
-export function createAdapter(search = window.location.search): FiveBarsData {
+export function createAdapter(search = window.location.search): CellSafeData {
   const choice = new URLSearchParams(search).get("data") ?? import.meta.env.VITE_DATA_SOURCE ?? "static";
   if (choice === "mock") return new MockAdapter();
   if (choice === "databricks") return new DatabricksAdapter();
