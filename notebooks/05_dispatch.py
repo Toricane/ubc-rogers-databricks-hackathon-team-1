@@ -6,7 +6,7 @@
 # MAGIC %md
 # MAGIC # Dispatch tables: who leaves Waterfront, and which TransLink services go home
 # MAGIC
-# MAGIC Builds the three tables the Five Bars 3G "Getting home" tab reads (through `frontends/real/scripts/export_databricks.py`):
+# MAGIC Builds the three tables the Cell-Safe "Getting home" tab reads (through `frontends/real/scripts/export_databricks.py`):
 # MAGIC
 # MAGIC | Table | Grain | What it holds |
 # MAGIC |---|---|---|

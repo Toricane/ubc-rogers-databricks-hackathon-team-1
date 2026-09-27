@@ -1,6 +1,6 @@
 # Presence data: how it gets into the app
 
-Five Bars 3G reads exported Databricks snapshots through `StaticAdapter`. There is no live SQL backend, and the browser never gets Databricks credentials.
+Cell-Safe reads exported Databricks snapshots through `StaticAdapter`. There is no live SQL backend, and the browser never gets Databricks credentials.
 
 ## Source tables
 

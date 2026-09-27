@@ -131,7 +131,7 @@ export interface Transport {
   gtfs?: { url?: string | null; title?: string | null; version?: string | null; fetched?: string | null };
 }
 
-export interface FiveBarsData {
+export interface CellSafeData {
   readonly kind: "mock" | "static" | "databricks";
   isMock(): boolean;
   getDates(): Promise<string[]>; // INTERNAL

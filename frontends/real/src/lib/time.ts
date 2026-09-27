@@ -40,3 +40,10 @@ export function shortDate(date: string): string {
   const [, mo, d] = date.split("-").map(Number);
   return `${MONTHS[mo - 1]} ${d}`;
 }
+
+const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+/** Weekday of a "YYYY-MM-DD" calendar date. */
+export function weekday(date: string): string {
+  const [y, mo, d] = date.split("-").map(Number);
+  return WEEKDAYS[new Date(Date.UTC(y, mo - 1, d)).getUTCDay()];
+}
