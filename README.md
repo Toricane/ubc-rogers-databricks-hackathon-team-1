@@ -65,8 +65,23 @@ notebooks/01_timestamp_timezone.py   # UTC vs America/Vancouver check (verdict: 
 notebooks/02_grain_and_identity.py   # 30-minute grid vs 1-second clock; no visitor id
 notebooks/03_waterfront_activity.py  # active visits by 30-minute bin and origin
 notebooks/04_generation_report.py    # site calendars, dwell, and home-label mix
+notebooks/05_dispatch.py             # gold_route_* tables for the "Getting home" tab (Jul 22 incident, TransLink GTFS)
+notebooks/dispatch_transit.py        # GTFS parsing used by 05_dispatch.py (plain module)
+frontends/real/                      # Five Bars 3G, the duty-officer tool
 frontends/waterfront-presence-sketch/   # one test player; add other tools as sibling folders
 ```
+
+## Dispatch tables
+
+`notebooks/05_dispatch.py` writes three tables in `workspace.rogers_waterfront_minute`, read by `frontends/real/scripts/export_databricks.py`:
+
+| Table | Grain | Holds |
+|---|---|---|
+| `gold_route_events` | incident | The sourced Jul 22 2026 heat and smoke incident (same record as `incidents.json` `jul22`) |
+| `gold_route_demand` | date × 30-min slot × origin | `present` at the slot minute and `departing_30m`, sessions ending in `[slot, slot + 30 min)`, for the incident date and the day after |
+| `gold_route_transit` | origin × TransLink route | Scheduled TransLink services from Waterfront toward each Metro home area, from the static GTFS feed (not real-time) |
+
+Confirmed on 2026-09-26: `silver_sessions_local` agrees with `silver_origin_minute` (4,372 sessions active at 2026-07-22 17:00 either way), and `end_time_local` is exactly `start_time_local + dwell_minutes`. `gold_route_demand` has 1,728 rows per date; `departing_30m` sums to 35,605 on Jul 22 and 48,695 on Jul 23. Counts are sessions, not people. Only sourced incidents are used.
 
 ## Frontends
 
