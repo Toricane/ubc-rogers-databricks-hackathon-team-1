@@ -6,7 +6,7 @@ Built for the **Rogers × UBC × Databricks — Data Intelligence for Smarter Co
 
 Five Bars helps an emergency-management duty officer explore how a disruption could affect people around Waterfront and compare transport, support-location and supply options. It combines historical synthetic cellular attachment counts with geographic reference data and explicit response assumptions.
 
-**[Databricks App](https://five-bars-3g-7474653168808484.aws.databricksapps.com/)**
+**[Databricks App](https://cell-safe.vercel.app/)**
 
 The hosted app and notebook require appropriate Databricks access. This is a historical scenario prototype, not a live population feed.
 
