@@ -234,3 +234,17 @@
 }
 .map-wrap .leaflet-control-zoom a:hover { background: var(--bg); color: var(--text); }
 .map-wrap .leaflet-control-zoom a.leaflet-disabled { color: var(--unused); background: var(--surface); }
+
+/* Phone: legend sits under the map instead of covering it. Desktop overlay is unchanged. */
+@media (max-width: 900px) {
+  .map-wrap { height: auto; display: flex; flex-direction: column; }
+  .map-wrap .map { height: max(240px, 40vh); flex: none; }
+  .map-wrap .legend {
+    position: static;
+    border: none;
+    border-top: 1px solid var(--border);
+    border-radius: 0;
+    box-shadow: none;
+  }
+  .legend-row { flex-wrap: wrap; }
+}

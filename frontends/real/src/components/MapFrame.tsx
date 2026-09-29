@@ -10,10 +10,22 @@ function FitBounds({ points, zoom }: { points: [number, number][]; zoom: number 
   const map = useMap();
   const key = JSON.stringify(points);
   useEffect(() => {
-    map.invalidateSize();
-    if (points.length === 0) return;
-    if (points.length === 1) map.setView(points[0], zoom);
-    else map.fitBounds(L.latLngBounds(points), { paddingTopLeft: [36, 36], paddingBottomRight: [36, 130], maxZoom: 15 });
+    // Desktop leaves 130px at the bottom for the overlaid legend. On a phone the legend
+    // sits under the map, so that padding would crush the routes into the top of a short map.
+    const mq = window.matchMedia("(max-width: 900px)");
+    const apply = () => {
+      map.invalidateSize();
+      if (points.length === 0) return;
+      if (points.length === 1) map.setView(points[0], zoom);
+      else map.fitBounds(L.latLngBounds(points), {
+        paddingTopLeft: [36, 36],
+        paddingBottomRight: [36, mq.matches ? 36 : 130],
+        maxZoom: 15,
+      });
+    };
+    apply();
+    mq.addEventListener("change", apply);
+    return () => mq.removeEventListener("change", apply);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [map, key, zoom]);
   return null;

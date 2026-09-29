@@ -402,3 +402,106 @@ button:disabled { cursor: default; }
   .stat-value { font-size: 28px; }
   .region-table td { padding-top: 4px; padding-bottom: 4px; }
 }
+
+/* ---------- phone: same screens, stacked. Desktop (above 900px) is unchanged. ---------- */
+@media (max-width: 900px) {
+  .app { height: 100dvh; }
+
+  .topbar {
+    flex-wrap: wrap;
+    row-gap: 8px;
+    padding-top: max(8px, env(safe-area-inset-top));
+    padding-left: max(var(--s5), env(safe-area-inset-left));
+    padding-right: max(var(--s5), env(safe-area-inset-right));
+  }
+  .topbar > .topbar-divider,
+  .topbar > .spacer { display: none; }
+  .topbar > .brand { order: 1; }
+  .topbar > .mock-badge { order: 2; margin-left: auto; }
+  .topbar > .theme-btn { order: 2; }
+  .topbar:not(:has(.mock-badge)) > .theme-btn { margin-left: auto; }
+  .topbar > .incident-text {
+    order: 3;
+    flex: 1 1 100%;
+    flex-wrap: wrap;
+    row-gap: 4px;
+  }
+  .incident-text .desc { display: none; }
+  .incident-text .name { max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+  .topbar > .time-step { order: 4; flex: 1 1 100%; width: 100%; }
+  .time-slider { flex: 1 1 auto; width: auto; min-width: 0; }
+  .step-btn { width: 44px; }
+
+  .tabs {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    gap: var(--s4);
+    scrollbar-width: none;
+    padding-left: max(var(--s5), env(safe-area-inset-left));
+    padding-right: max(var(--s3), env(safe-area-inset-right));
+    -webkit-overflow-scrolling: touch;
+  }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tab { flex: 0 0 auto; white-space: nowrap; scroll-margin-right: 64px; }
+  .tabs .info-btn {
+    position: sticky;
+    right: 0;
+    z-index: 2;
+    margin-left: 12px;
+    background: var(--surface);
+    box-shadow: -16px 0 12px var(--surface);
+  }
+
+  .panel {
+    padding-left: max(var(--s5), env(safe-area-inset-left));
+    padding-right: max(var(--s5), env(safe-area-inset-right));
+    padding-bottom: max(var(--s3), env(safe-area-inset-bottom));
+  }
+
+  .headline,
+  .headline.one-line { white-space: normal; }
+  .headline-row { flex-wrap: wrap; row-gap: 8px; }
+  .headline-row .headline { flex: 1 1 100%; }
+  .headline-row .btn-primary { flex: none; }
+
+  .stat-strip { grid-template-columns: 1fr; }
+  .stat { padding: 12px 0; }
+  .stat + .stat { padding-left: 0; border-left: none; border-top: 1px solid var(--border); }
+  .stat::after,
+  .stat + .stat::after { left: 0; right: 0; }
+
+  .split-side,
+  .split-wide,
+  .supply-area { grid-template-columns: minmax(0, 1fr); }
+  /* Grow with the stacked map and tables so the panel can scroll. Desktop keeps flex: 1. */
+  .split,
+  .supply-area { flex: none; min-height: 0; height: auto; }
+  .region-panel { max-height: none; overflow: visible; }
+
+  .supply-grid { grid-template-columns: minmax(0, 1fr); overflow: visible; }
+  .list-card,
+  .supply-card { overflow-x: auto; overflow-y: visible; }
+  .list-card .table,
+  .supply-card .table {
+    width: max-content;
+    min-width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+  }
+  .list-card .table th:first-child,
+  .list-card .table td:first-child,
+  .supply-card .table th:first-child,
+  .supply-card .table td:first-child {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    background: var(--surface);
+  }
+  .list-card .table tr.row-closed td:first-child,
+  .list-card .table tr.row-divert td:first-child,
+  .supply-card .table tr.row-closed td:first-child,
+  .supply-card .table tr.row-divert td:first-child { background: var(--brand-tint); }
+
+  .weather-grid { grid-template-columns: 1fr; }
+  .drawer { width: 100%; }
+}
